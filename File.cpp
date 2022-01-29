@@ -11,8 +11,8 @@ side, the mass is constrained between 0 and 1.
 int main(){
     std::ofstream File;
     double seed{0};
-    double particles{200};  // number of particles
-    File.open ("Data.txt", std::ofstream::out); // store initial state
+    double particles{200};  // Number of particles
+    File.open ("Data.txt", std::ofstream::out); // Store initial state
 
     std::mt19937 g1(seed);
     std::uniform_real_distribution<double> distr(0.0,1.0);
