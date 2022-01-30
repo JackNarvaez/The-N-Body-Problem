@@ -16,7 +16,7 @@ gravitation.
 
 int main(int argc, char **argv){
 
-    int N = std::atoi(argv[1]); // Number of Particles
+    int N; // Number of Particles
     int rep = std::atoi(argv[2]);
     int pId;  // Rank of process
     int nP;  // Number of processes
@@ -24,6 +24,7 @@ int main(int argc, char **argv){
     int root{0};    // root process
     MPI_Status status;
     std::string input = "Data.txt";
+    read_NParticles(input, N);
 
     /*Initializes MPI*/
     MPI_Init(&argc, &argv);  

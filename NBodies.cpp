@@ -10,8 +10,31 @@ gravitation. The code implements the ring method.
 #include <sstream> 
 #include <vector>
 #include <random>
-#include <cstdlib>º
+#include <cstdlib>
 #include <cmath>
+
+void read_NParticles(const std::string &File_address, int& N){
+  /*---------------------------------------------------------------------------
+  read_data:
+  Read number of particles from File_address.
+  The data is supposed to be in the first line such as #  N.
+  -----------------------------------------------------------------------------
+  Arguments:
+    File_address: File address from which the data is read.
+    N : Number of particles.
+  ---------------------------------------------------------------------------*/
+
+  std::ifstream File;
+  File.open (File_address, std::ifstream::in);    // Open file for reading
+  std::string line;
+  std::getline(File,line);
+  std::istringstream iss(line);   // Separate line in columns
+  std::string data;
+  iss >> data;  // Delete sign #
+  iss >> data;
+  N = std::atoi(data.c_str());
+  File.close();
+}
 
 void read_data(const std::string &File_address, std::vector<double>& Pos, std::vector<double>& Mom){
   /*---------------------------------------------------------------------------

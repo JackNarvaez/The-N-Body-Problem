@@ -2,6 +2,7 @@
 #define NBODIES_H_
 #include <cassert>
 
+void read_NParticles(const std::string &File_address, int& N);
 void read_data(const std::string &File_address, std::vector<double>& Pos, std::vector<double>& Mom);
 void Initial_state(const std::string &File_address, std::vector<double>& Pos, std::vector<double>&Mom, std::vector<int>&len, const int & N, const int & tag, const int & pId, const int & nP, const int & root, MPI_Status status);
 void Gravitational_force(std::vector<double>& Force, const std::vector<double>& vec0, const std::vector<double>& vec1, const int & len0, const int & len1);
