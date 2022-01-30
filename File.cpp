@@ -14,6 +14,8 @@ int main(int argc, char **argv){
     int particles = std::atoi(argv[1]);  // Number of particles
     File.open ("Data.txt", std::ofstream::out); // Store initial state
 
+    File << "#\t" << particles << std::endl;    // Write in first line the number of particles.
+
     std::mt19937 g1(seed);
     std::uniform_real_distribution<double> distr(0.0,1.0);
 
