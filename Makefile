@@ -8,6 +8,6 @@ File.txt: File.cpp
 	./random.x ${Ns}
 scaling: main.cpp NBodies.cpp NBodies.h scaling.sh File.txt parallel.py speedup.py
 	mpic++ $< NBodies.cpp -o scaling.x;\
-	bash scaling.sh ${Ns} ${rep};\
+	bash scaling.sh ${rep};\
 	python3 parallel.py;\
 	python3 speedup.py

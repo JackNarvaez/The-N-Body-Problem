@@ -17,7 +17,7 @@ gravitation.
 int main(int argc, char **argv){
 
     int N; // Number of Particles
-    int rep = std::atoi(argv[2]);
+    int rep = std::atoi(argv[1]);
     int pId;  // Rank of process
     int nP;  // Number of processes
     int tag{0}; 
