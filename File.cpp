@@ -8,10 +8,10 @@ side, the mass is constrained between 0 and 1.
 #include <fstream>  // std::ofstream
 #include <random>
 
-int main(){
+int main(int argc, char **argv){
     std::ofstream File;
     double seed{0};
-    double particles{200};  // Number of particles
+    int particles = std::atoi(argv[1]);  // Number of particles
     File.open ("Data.txt", std::ofstream::out); // Store initial state
 
     std::mt19937 g1(seed);

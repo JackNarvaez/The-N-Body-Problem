@@ -10,7 +10,7 @@ gravitation. The code implements the ring method.
 #include <sstream> 
 #include <vector>
 #include <random>
-#include <cstdlib>
+#include <cstdlib>º
 #include <cmath>
 
 void read_data(const std::string &File_address, std::vector<double>& Pos, std::vector<double>& Mom){
@@ -134,7 +134,7 @@ void Total_Force(const std::vector<double>& Pos, std::vector<double>& Force, con
     len   :   Number of particles to send to each process.
     N     :   Number of total particles.
     tag   :   Message tag.
-	  pId   :   Process identity.
+    pId   :   Process identity.
     nP    :   Number of processes.
     root  :   Root process which reads data.
     status:   Status object.
