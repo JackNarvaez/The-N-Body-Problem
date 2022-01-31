@@ -16,7 +16,8 @@ scaling: scaling.cpp NBodies.cpp NBodies.h scaling.sh Random.txt parallel.py spe
 
 strong: strong_scaling.sh scaling.sh random.cpp
 	mpic++ scaling.cpp  NBodies.cpp -o scaling.x
-	bash $<;\
+	bash $< 8;\
+	bash $< 1;\
 	python3 strong.py
 
 evolution: Evolution.cpp NBodies.cpp NBodies.h Random.txt
