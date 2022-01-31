@@ -55,9 +55,9 @@ int main(int argc, char **argv){
       if (root == pId) tstart = MPI_Wtime();
       Total_Force(Pos, Force, len, N, tag, pId, nP, root, status);
       if (root == pId) {
-	      tend = MPI_Wtime();
-	      total_time += tend - tstart;
-	      if (ii == (rep-1)) std::cout << nP << "\t" << total_time/rep << std::endl;
+	tend = MPI_Wtime();
+	total_time += tend - tstart;
+	if (ii == (rep-1)) std::cout << nP << "\t" << total_time/rep << "\t" << N <<  "\n";
       }
     }
 
