@@ -1,13 +1,15 @@
 Ns = 2000
 rep = 10
 
-all: scaling.jpg
+all: scaling
 
-File.txt: File.cpp
+random.txt: random.cpp
 	g++ $< -o random.x;\
 	./random.x ${Ns}
-scaling: main.cpp NBodies.cpp NBodies.h scaling.sh File.txt parallel.py speedup.py
+scaling: scaling.cpp NBodies.cpp NBodies.h scaling.sh random.txt parallel.py speedup.py
 	mpic++ $< NBodies.cpp -o scaling.x;\
 	bash scaling.sh ${rep};\
 	python3 parallel.py;\
 	python3 speedup.py
+clean:
+	rm -f *.x *.txt *.png
