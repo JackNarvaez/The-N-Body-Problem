@@ -208,14 +208,14 @@ void Save_vec(std::ofstream& File, const std::vector<double>& Vec, const int & l
   }
 }
 
-void Save_data(std::ofstream& File, const std::vector<double>& Force, const std::vector<int>& len, const int & N, const int & tag, const int & pId, const int & nP, const int & root, MPI_Status status){
+void Save_data(std::ofstream& File, const std::vector<double>& Pos, const std::vector<int>& len, const int & N, const int & tag, const int & pId, const int & nP, const int & root, MPI_Status status){
   /*---------------------------------------------------------------------------
   Save_Data:
-  Save the gravitation forces of all particles in Force.txt.
+  Save the Position of all particles in Evolution.txt.
   -----------------------------------------------------------------------------
   Arguments:
     File  :   File where data is saved.
-    Force :   Force of particles (1D vector)
+    Pos   :   Position of particles (1D vector)
     len   :   Number of particles to send to each process.
     N     :   Number of particles.
     tag   :   Message tag.
@@ -229,17 +229,69 @@ void Save_data(std::ofstream& File, const std::vector<double>& Force, const std:
   if(pId==root){
     std::cout.precision(2);
     std::cout<<std::scientific;
-    File.open("Force.txt");
-    Save_vec(File, Force, len[root]);
-    std::vector<double> Temp(3*(N/nP+1),0.0);
+    File.open("Evolution.txt",std::fstream::app);
+    Save_vec(File, Pos, len[root]);
+    std::vector<double> Temp(4*(N/nP+1),0.0);
     for (int ii =0; ii < nP; ii++){
       if (ii != pId){
-        MPI_Recv(&Temp[0], 3*len[ii], MPI_DOUBLE, ii, tag, MPI_COMM_WORLD, &status);
+        MPI_Recv(&Temp[0], 4*len[ii], MPI_DOUBLE, ii, tag, MPI_COMM_WORLD, &status);
         Save_vec(File, Temp,  len[ii]);
       }  
     }
     File.close(); 
   }else{
-    MPI_Send(&Force[0], 3*len[pId], MPI_DOUBLE, root, tag, MPI_COMM_WORLD);
+    MPI_Send(&Pos[0], 4*len[pId], MPI_DOUBLE, root, tag, MPI_COMM_WORLD);
+  }
+}
+
+void Euler(std::vector<double>& Pos, std::vector<double>& Mom, const std::vector<double>& Force, const double &dt, const int & N){
+  /*---------------------------------------------------------------------------
+  Euler:
+  Euler method to calculate next position and momentum.
+  -----------------------------------------------------------------------------
+  Arguments:
+
+    Pos   :   Position of particles (1D vector)
+    Mom   :   Momentum of particles (1D vector)
+    Force :   Force of particles in vec0 (1D vector)
+    N     :   Local particles for each process.
+  ---------------------------------------------------------------------------*/
+  for (int ii=0; ii < N; ii++){
+    for (int jj=0; jj<3; jj++){
+      Mom[3*ii+jj] += Force[3*ii+jj]*dt;
+      Pos[4*ii+jj] += Mom[3*ii+jj]/Pos[4*ii+3]*dt;
+    }
+  }
+}
+
+void Evolution(std::ofstream& File, std::vector<double>& Pos, std::vector<double>& Mom, std::vector<double>& Force, const std::vector<int>& len, const int & N, const int & tag, const int & pId, const int & nP, const int & root, MPI_Status status, const int &steps, const double & dt){
+  /*---------------------------------------------------------------------------
+  Evolution:
+  Evolution of the system of particles under gravitational interactions.
+  -----------------------------------------------------------------------------
+  Arguments:
+    File  :   File where data is saved.
+    Pos   :   Position of particles (1D vector)
+    Mom   :   Momentum of particles (1D vector)
+    Force :   Force of particles in vec0 (1D vector)
+    len   :   Number of particles to send to each process.
+    N     :   Number of particles.
+    tag   :   Message tag.
+    pId   :   Process identity.
+    nP    :   Number of processes.
+    root  :   Root process which reads data.
+    status:   Status object.
+    steps :   Number of steps
+    dt    :   Size of step
+  ---------------------------------------------------------------------------*/
+  
+  if (pId==root){
+    remove("Evolution.txt");
+  }
+  Save_data(File, Pos, len, N, tag, pId, nP, root, status);
+  for (int ii=0; ii<steps; ii++){
+    Total_Force(Pos, Force, len, N, tag, pId, nP, root, status);
+    Euler(Pos, Mom, Force, dt, len[pId]);
+    Save_data(File, Pos, len, N, tag, pId, nP, root, status);  
   }
 }

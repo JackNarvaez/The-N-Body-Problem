@@ -23,7 +23,7 @@ int main(int argc, char **argv){
     int tag{0}; 
     int root{0};    // root process
     MPI_Status status;
-    std::string input = "random.txt";
+    std::string input = "Random.txt";
     read_NParticles(input, N);
 
     /*Initializes MPI*/
@@ -48,22 +48,19 @@ int main(int argc, char **argv){
     // Fill position and momentum vectors with the initial conditions
     Initial_state(input, Pos, Mom, len, N,  tag, pId, nP, root, status);
     // Calculate total force felt by all particles
-    double tstart = 0.0;
-    double tend = 0.0;
-    double total_time = 0.0;
+    double tstart{0.0};
+    double tend{0.0};
+    double total_time{0.0};
     for (int ii = 0; ii < rep; ii++){
-      if (root == pId){
-	tstart = MPI_Wtime();
-      }
+      if (root == pId) tstart = MPI_Wtime();
       Total_Force(Pos, Force, len, N, tag, pId, nP, root, status);
       if (root == pId) {
-	tend = MPI_Wtime();
-	total_time += tend - tstart;
-	if (ii == (rep-1)){
-	  std::cout<<nP<<"\t"<<total_time/rep<<"\n";
-	}
+	      tend = MPI_Wtime();
+	      total_time += tend - tstart;
+	      if (ii == (rep-1)) std::cout << nP << "\t" << total_time/rep << std::endl;
       }
     }
+
     /*Finalizes MPI*/
     MPI_Finalize();
 

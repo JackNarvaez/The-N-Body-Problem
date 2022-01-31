@@ -12,7 +12,7 @@ int main(int argc, char **argv){
     std::ofstream File;
     double seed{0};
     int particles = std::atoi(argv[1]);  // Number of particles
-    File.open ("random.txt", std::ofstream::out); // Store initial state
+    File.open ("Random.txt", std::ofstream::out); // Store initial state
 
     File << "#\t" << particles << std::endl;    // Write in first line the number of particles.
 
