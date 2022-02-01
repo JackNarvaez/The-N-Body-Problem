@@ -8,6 +8,9 @@ Random.txt: random.cpp
 	g++ $< -o random.x;\
 	./random.x ${Ns}
 
+Galaxy.txt: galaxy.py
+	python3 $< 300 0 0 > $@ 
+
 scaling: scaling.cpp NBodies.cpp NBodies.h scaling.sh Random.txt parallel.py speedup.py
 	mpic++ $< NBodies.cpp -o scaling.x;\
 	bash scaling.sh ${rep};\
@@ -25,4 +28,4 @@ evolution: Evolution.cpp NBodies.cpp NBodies.h Random.txt
 	mpirun -np ${Np} ./Evolution.x
 
 clean:
-	rm -f *.x *.txt *.png
+	rm -f *.x *.txt *.png *.out
