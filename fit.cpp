@@ -1,43 +1,63 @@
 #include <iostream>
 #include <cmath>
-#include <math.h> 
+#include <fstream> 
+#include <sstream> 
+#include <vector>
 #include <gsl/gsl_fit.h>
 #include <gsl/gsl_statistics_double.h>
 
 
 //g++ -std=c++17  fit.cpp -lgsl -lgslcblas
 
-void LogNep(double*, int &n); 
+void read_data(const std::string &File_address, std::vector<double>& vector, int column);
+void Map(const std::vector<double>& x, std::vector<double>& y, int &n);
 
-int main(int argc, char **argv) {
-  //Performs least-squares fit to a straight line
-  double x[4] = {1,2,3,5};
-  double y1[4] = {1,4,9,25};
-  double y8[4] = {1,8,27,125};
+int main(int argc, char **argv){
+  std::vector<double> x;
+  std::vector<double> y;
   
-  int n = sizeof(x)/sizeof(x[0]);
-  
-  LogNep(y1,n);
-  LogNep(y8,n);
-  LogNep(x,n);
+  std::string ext{"strong"}, format{".txt"}; 
+  std::string data = ext+argv[1]+format;
+  read_data(data, x, 3);
+  read_data(data, y, 2);
+  int n = x.size();
+
+  Map(x, y, n);
 
   double c0, c1, cov00, cov01, cov11, sumsq;
-  gsl_fit_linear (x,1,y1,1,n, &c0, &c1, &cov00, &cov01, &cov11, &sumsq);
-
-  double c08, c18, cov008, cov018, cov118, sumsq8;
-  gsl_fit_linear (x,1,y8,1,n, &c08, &c18, &cov008, &cov018, &cov118, &sumsq8);
+  gsl_fit_linear (x.data(),1,y.data(),1,n, &c0, &c1, &cov00, &cov01, &cov11, &sumsq);
   
-  double R1=gsl_stats_correlation (x,1,y1,1,n);
-  double R8=gsl_stats_correlation (x,1,y8,1,n);
+  double R1=gsl_stats_correlation (x.data(),1,y.data(),1,n);
   
-  std::cout<<"1 Process:\t"<<exp(c0)<<" x^"<<c1<<"\t"<<R1*R1<<"\n";
-  std::cout<<"8 Processes:\t"<<exp(c08)<<" x^"<<c18<<"\t"<<R8*R8<<"\n";
+  std::cout<<c0 << "x + " << c1 <<"x^2"<<"\t"<<R1*R1<<"\n";
   return 0;
 }
 
-void LogNep (double *vector, int &n){
+void read_data(const std::string &File_address, std::vector<double>& vector, int column){
+    std::ifstream File;
+    File.open (File_address, std::ifstream::in);    // Open file
+    std::string line;
+    std::istringstream data;
+	while (!File.eof()){
+	std::getline(File,line);
+    // Omit empty lines and comments
+	if (line.length() == 0 || line[0] == '#'){
+		continue;
+    }else{
+        std::istringstream iss(line);   // Separate line in columns
+        std::string data;        
+        for (int ii=0; ii < column; ii++){
+            iss>>data;
+        }
+        vector.push_back(atof(data.c_str()));
+        }
+    }
+    File.close();
+}
+
+void Map(const std::vector<double>& x, std::vector<double>& y, int &n){
   int i=0;
   for (i=0; i<n; i++){
-    vector[i]=log(vector[i]);
+    y[i]/=x[i];
   }
 }
