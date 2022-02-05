@@ -133,14 +133,14 @@ void Gravitational_force(std::vector<double>& Force, const std::vector<double>& 
     len1  :   Size of vec1.
   ---------------------------------------------------------------------------*/
 
-  const double G= 4*pow(M_PI,2);  // Gravitational constant
+  const double G= 4*pow(M_PI,2);  // Gravitational constant [Msun*AU]
   double d2;  // Square of distance
   for(int ii=0; ii<len0; ii++){
     for(int jj=0; jj<len1; jj++){
       d2=pow(vec1[4*jj]-vec0[4*ii],2)+pow(vec1[4*jj+1]-vec0[4*ii+1],2)+pow(vec1[4*jj+2]-vec0[4*ii+2],2);
       if(d2<1.0E-10) d2=1.0E-7; // Lower distances are not valid
       for(int kk=0; kk<3; kk++){
-	      Force[3*ii+kk]+=G*(vec0[4*ii+3]*vec1[4*jj+3])*(vec1[4*jj+kk]-vec0[4*ii+kk])/pow(d2,1.5);
+	      Force[3*ii+kk]+=G*(vec1[4*jj+3])*(vec1[4*jj+kk]-vec0[4*ii+kk])/pow(d2,1.5);
       }
     }
   }
@@ -204,7 +204,7 @@ void Save_vec(std::ofstream& File, const std::vector<double>& Vec, const int & l
   ---------------------------------------------------------------------------*/
 
   for (int ii = 0; ii < len; ii++){
-    File << Vec[3*ii]<< "\t" << Vec[3*ii+1] << "\t" << Vec[3*ii+2] << std::endl;
+    File << Vec[4*ii]<< "\t" << Vec[4*ii+1] << "\t" << Vec[4*ii+2] << std::endl;
   }
 }
 
@@ -259,12 +259,32 @@ void Euler(std::vector<double>& Pos, std::vector<double>& Mom, const std::vector
   for (int ii=0; ii < N; ii++){
     for (int jj=0; jj<3; jj++){
       Mom[3*ii+jj] += Force[3*ii+jj]*dt;
+      Pos[4*ii+jj] += Mom[3*ii+jj]*dt;
+    }
+  }
+}
+
+void RK45(std::vector<double>& Pos, std::vector<double>& Mom, const std::vector<double>& Force, const double &dt, const int & N){
+  /*---------------------------------------------------------------------------
+  Euler:
+  Euler method to calculate next position and momentum.
+  -----------------------------------------------------------------------------
+  Arguments:
+
+    Pos   :   Position of particles (1D vector)
+    Mom   :   Momentum of particles (1D vector)
+    Force :   Force of particles in vec0 (1D vector)
+    N     :   Local particles for each process.
+  ---------------------------------------------------------------------------*/
+  for (int ii=0; ii < N; ii++){
+    for (int jj=0; jj<3; jj++){
+      Mom[3*ii+jj] += Force[3*ii+jj]*dt;
       Pos[4*ii+jj] += Mom[3*ii+jj]/Pos[4*ii+3]*dt;
     }
   }
 }
 
-void Evolution(std::ofstream& File, std::vector<double>& Pos, std::vector<double>& Mom, std::vector<double>& Force, const std::vector<int>& len, const int & N, const int & tag, const int & pId, const int & nP, const int & root, MPI_Status status, const int &steps, const double & dt){
+void Evolution(std::ofstream& File, std::vector<double>& Pos, std::vector<double>& Mom, std::vector<double>& Force, const std::vector<int>& len, const int & N, const int & tag, const int & pId, const int & nP, const int & root, MPI_Status status, const int &steps, const double & dt, const int & jump){
   /*---------------------------------------------------------------------------
   Evolution:
   Evolution of the system of particles under gravitational interactions.
@@ -283,6 +303,7 @@ void Evolution(std::ofstream& File, std::vector<double>& Pos, std::vector<double
     status:   Status object.
     steps :   Number of steps
     dt    :   Size of step
+    jump  :   Number of jumped steps
   ---------------------------------------------------------------------------*/
   
   if (pId==root){
@@ -292,6 +313,6 @@ void Evolution(std::ofstream& File, std::vector<double>& Pos, std::vector<double
   for (int ii=0; ii<steps; ii++){
     Total_Force(Pos, Force, len, N, tag, pId, nP, root, status);
     Euler(Pos, Mom, Force, dt, len[pId]);
-    Save_data(File, Pos, len, N, tag, pId, nP, root, status);  
+    if ( ii%jump == 0) Save_data(File, Pos, len, N, tag, pId, nP, root, status);  
   }
 }

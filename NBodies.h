@@ -10,6 +10,6 @@ void Total_Force(const std::vector<double>& Pos, std::vector<double>& Force, con
 void Save_data(std::ofstream& File, const std::vector<double>& Pos, const std::vector<int>& len, const int & N, const int & tag, const int & pId, const int & nP, const int & root, MPI_Status status);
 void Save_vec(std::ofstream& File, const std::vector<double>& Vec, const int & len);
 void Euler(std::vector<double>& Pos, std::vector<double>& Mom, const std::vector<double>& Force, const double &dt, const int & N);
-void Evolution(std::ofstream& File, std::vector<double>& Pos, std::vector<double>& Mom, std::vector<double>& Force, const std::vector<int>& len, const int & N, const int & tag, const int & pId, const int & nP, const int & root, MPI_Status status, const int &steps, const double & dt);
+void Evolution(std::ofstream& File, std::vector<double>& Pos, std::vector<double>& Mom, std::vector<double>& Force, const std::vector<int>& len, const int & N, const int & tag, const int & pId, const int & nP, const int & root, MPI_Status status, const int &steps, const double & dt, const int & jump);
 
 #endif // NBODIES_H_

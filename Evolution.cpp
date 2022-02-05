@@ -21,12 +21,13 @@ int main(int argc, char **argv){
     int tag{0};
     int N; // Number of Particles
     int root{0};    // root process
-    int steps{10};
-    double dt{0.01};
+    int steps = atoi(argv[1]);
+    double dt = atof(argv[2]);
+    double jump = atoi(argv[3]);
     MPI_Status status;
-    std::string input = "Random.txt";
+    std::string input = argv[4];
     read_NParticles(input, N);
-
+    
     /*Initializes MPI*/
     MPI_Init(&argc, &argv);  
     MPI_Comm_size(MPI_COMM_WORLD, &nP);
@@ -52,7 +53,7 @@ int main(int argc, char **argv){
     Total_Force(Pos, Force, len, N, tag, pId, nP, root, status);
     //Save the Position felt by all particles
     std::ofstream Data;
-    Evolution(Data, Pos, Mom, Force, len, N, tag, pId, nP, root, status, steps, dt);
+    Evolution(Data, Pos, Mom, Force, len, N, tag, pId, nP, root, status, steps, dt, jump);
 
     /*Finalizes MPI*/
     MPI_Finalize();

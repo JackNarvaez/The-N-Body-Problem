@@ -13,13 +13,14 @@ int main(int argc, char **argv){
     double seed{0};
     int particles = std::atoi(argv[1]);  // Number of particles
     File.open ("Random.txt", std::ofstream::out); // Store initial state
-
+    
     File << "#\t" << particles << std::endl;    // Write in first line the number of particles.
 
     std::mt19937 g1(seed);
     std::uniform_real_distribution<double> distr(0.0,1.0);
 
     for(int ii=0; ii < particles; ii++){
+
         for (int jj=0; jj < 7; jj++){
             File << distr(g1) << "\t";
         }

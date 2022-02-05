@@ -75,7 +75,7 @@ def spiral_galaxy(N, max_mass, BHM, center, ini_radius, beta, alpha):
 
 # ----------------------------MAIN-------------------------------- #
 # Gravitational constant in units of kpc^3 M_sun^-1 Gyr-2
-G = 4.4985022e-6/8000
+G = 4*pi**2
 # Number of bodies (may be smaller according to the distribution chosen).
 N = int(sys.argv[1])
 # Mass of the N bodies.
@@ -87,7 +87,7 @@ BHposition = array([.5, .5, .5]) # Location of the SBH
 beta=pi*int(sys.argv[2])/10     #Inclination
 alpha=pi*int(sys.argv[3])/10    #Angle in the plain x,y
 # Initial radius of the distribution
-ini_radius = 10/20 #kpc
+ini_radius = 300 #kpc
 masses, positions, momenta = spiral_galaxy(N, max_mass, BHM, BHposition, ini_radius, beta, alpha)
 #Save
 print("#\t",N+1)
