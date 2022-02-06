@@ -42,18 +42,18 @@ int main(int argc, char **argv){
         len[ii] = end-begin;
     }
 
-    // Position, Momemtum and Force arrays
+    // Position, Velocity and Acceleration arrays
     std::vector<double> Pos(4*len[pId],0.0);    // [x, y, z, mass]
-    std::vector<double> Mom(3*len[pId],0.0);
-    std::vector<double> Force(3*len[pId],0.0);
+    std::vector<double> Vel(3*len[pId],0.0);    // [vx, vy, vz]
+    std::vector<double> Acc(3*len[pId],0.0);    // [ax, ay, az]
 
-    // Fill position and momentum vectors with the initial conditions
-    Initial_state(input, Pos, Mom, len, N,  tag, pId, nP, root, status);
-    // Calculate total force felt by all particles
-    Total_Force(Pos, Force, len, N, tag, pId, nP, root, status);
+    // Fill position and velocity vectors with the initial conditions
+    Initial_state(input, Pos, Vel, len, N,  tag, pId, nP, root, status);
+    // Calculate total acceleration felt by all particles
+    Acceleration(Pos, Acc, len, N, tag, pId, nP, root, status);
     //Save the Position felt by all particles
     std::ofstream Data;
-    Evolution(Data, Pos, Mom, Force, len, N, tag, pId, nP, root, status, steps, dt, jump);
+    Evolution(Data, Pos, Vel, Acc, len, N, tag, pId, nP, root, status, steps, dt, jump);
 
     /*Finalizes MPI*/
     MPI_Finalize();
