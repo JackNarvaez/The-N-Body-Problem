@@ -1,4 +1,5 @@
-for nP in $(seq 1 16); do
-    mpirun -np ${nP} --oversubscribe ./scaling.x "$1";
+Np=$(nproc)
+for ii in $(seq 1 ${Np}); do
+    mpirun -np ${ii} --oversubscribe ./scaling.x "$1";
 done > scaling.txt
 

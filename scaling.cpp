@@ -1,7 +1,4 @@
 /*---------------------------------------------
-Evolution of a system of particles enclosed in
-a box of unit sides, the only interaction is 
-gravitation.
 ---------------------------------------------*/
 
 #include <mpi.h>
@@ -40,24 +37,24 @@ int main(int argc, char **argv){
         len[ii] = end-begin;
     }
 
-    // Position, Momemtum and Force arrays
+    // Position, Velocity and Acceleration arrays
     std::vector<double> Pos(4*len[pId],0.0);    // [x, y, z, mass]
-    std::vector<double> Mom(3*len[pId],0.0);
-    std::vector<double> Force(3*len[pId],0.0);
+    std::vector<double> Vel(3*len[pId],0.0);    // []
+    std::vector<double> Acc(3*len[pId],0.0);  // [Fx, Fy, Fz]
 
-    // Fill position and momentum vectors with the initial conditions
-    Initial_state(input, Pos, Mom, len, N,  tag, pId, nP, root, status);
-    // Calculate total force felt by all particles
+    // Fill position and velocity vectors with the initial conditions
+    Initial_state(input, Pos, Vel, len, N,  tag, pId, nP, root, status);
+    // Calculate total acceleration felt by all particles
     double tstart{0.0};
     double tend{0.0};
     double total_time{0.0};
     for (int ii = 0; ii < rep; ii++){
       if (root == pId) tstart = MPI_Wtime();
-      Total_Force(Pos, Force, len, N, tag, pId, nP, root, status);
+        Acceleration(Pos, Acc, len, N, tag, pId, nP, root, status);
       if (root == pId) {
-	tend = MPI_Wtime();
-	total_time += tend - tstart;
-	if (ii == (rep-1)) std::cout << nP << "\t" << total_time/rep << "\t" << N <<  "\n";
+	    tend = MPI_Wtime();
+	    total_time += tend - tstart;
+	      if (ii == (rep-1)) std::cout << nP << "\t" << total_time/rep << "\t" << N <<  "\n";
       }
     }
 
