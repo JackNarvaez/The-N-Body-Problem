@@ -2,6 +2,7 @@
 Create a file with the initial configuration of
 a system of particles enclosed in a box of unit
 side, the mass is constrained between 0 and 1.
+The initial positions are choosen randomly.
 ---------------------------------------------*/
 
 #include<iostream>
