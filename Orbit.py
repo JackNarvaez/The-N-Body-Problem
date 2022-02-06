@@ -14,7 +14,7 @@ z = np.loadtxt("Evolution.txt")[:,2]
 #print(x, y, z)
 fig = plt.figure(figsize=(10, 7))
 ax = fig.gca(projection='3d')
-ax.scatter3D(x, y, z,color='crimson')
+ax.scatter3D(x, y, z,color='white')
 ax.set_xlabel('x')
 ax.set_ylabel('y')
 ax.set_zlabel('z')
