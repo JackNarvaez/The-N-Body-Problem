@@ -1,23 +1,22 @@
-import numpy as np
+from numpy import loadtxt, arange
 import matplotlib.pyplot  as plt
+import sys
 
-#Theory
-l1=[1,16]
-l2=[1,16]
-plt.plot(l1,l2,label=f"Theorical",linestyle="dashed")
+y = loadtxt("scaling.txt")[:,1]
+x = arange(1,y.size+1)
 
-x = np.arange(1,17)
-y=np.loadtxt("scaling.txt")[:,1]
-    
+N = sys.argv[1]  
 T1=y[0]
 
 for i in x:
     y[i-1]=(T1/y[i-1])
 
-plt.scatter(x,y,marker='+',color="k",label=f"Experimental")
+
+plt.plot(x,x,label="Theorical",linestyle="dashed")
+plt.scatter(x,y,marker='+',color="k",label="Experimental")
 
 plt.xlabel("# Processes")
 plt.ylabel("speedup")
-plt.title("Speedup with N=2000 (8 cores/16 threads)")
+plt.title(f"Speedup with N={N}({y.size//2} cores/{y.size} threads)")
 plt.legend()
 plt.savefig("speedup.png",dpi=200)

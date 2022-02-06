@@ -1,23 +1,21 @@
-import numpy as np
+from numpy import loadtxt, arange
 import matplotlib.pyplot  as plt
+import sys
 
-#Theory
-l1=[1,16]
-l2=[1,1]
-plt.plot(l1,l2,label=f"Theoretical",linestyle="dashed")
+y = loadtxt("scaling.txt")[:,1]
+x = arange(1,y.size+1)
 
-x = np.arange(1,17)
-y = np.loadtxt("scaling.txt")[:,1]
-
+N = sys.argv[1]  
 T1=y[0]
 
 for i in x:
     y[i-1]=(T1/y[i-1])/i
 
-plt.scatter(x,y,marker='+',color="k",label=f"Experimental")
+plt.plot([x[0],x[-1]],[1,1],label="Theoretical",linestyle="dashed")
+plt.scatter(x,y,marker='+',color="k",label="Experimental")
 
 plt.xlabel("# Processes")
 plt.ylabel("Parallel efficiency")
-plt.title("Parallel Efficiency with N=2000 (8 cores/16 threads)")
+plt.title(f"Parallel Efficiency with N={N} ({y.size//2} cores/{y.size} threads)")
 plt.legend()
 plt.savefig("parallel.png",dpi=200)
