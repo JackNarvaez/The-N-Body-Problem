@@ -1,8 +1,8 @@
 from numpy import loadtxt
 import matplotlib.pyplot  as plt
-import sys
+from sys import argv
 
-Np = sys.argv[1]
+Np = argv[1]
 
 x = loadtxt("strong1.txt")[:,2]
 y1 = loadtxt("strong1.txt")[:,1]

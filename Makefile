@@ -1,11 +1,13 @@
 Ns = 100
 Ng = 10
+i = 0.4
+w = 0.1
 rep = 10
 Npv =$(shell nproc)
 Np = $(shell echo $$(($(Npv) / 2 )))
-steps = 200000
-dt = 0.0002
-jump = 100
+steps = 500000
+dt = 0.0001
+jump = 500
 
 all: scaling
 
@@ -13,18 +15,20 @@ Random: random.cpp
 	g++ $< -o random.x;\
 	./random.x ${Ns}
 
-Galaxy: Evolution.cpp NBodies.cpp NBodies.h galaxy.py
-	python3 galaxy.py ${Ng} 0 0 > Galaxy.txt;\
+Galaxy: Evolution.cpp NBodies.cpp NBodies.h galaxy.py Animation.py
+	python3 galaxy.py ${Ng} ${i} ${w} > Galaxy.txt;\
 	mpic++ $< NBodies.cpp -o Evolution.x;\
-	mpirun -np ${Np} ./Evolution.x ${steps} ${dt} ${jump} Galaxy.txt
+	mpirun -np ${Np} ./Evolution.x ${steps} ${dt} ${jump} Galaxy.txt;\
+	python3 Animation.py ${Ng} ${dt} ${jump}
 
-SagA: Evolution.cpp NBodies.cpp NBodies.h SagA.data
+SagA: Evolution.cpp NBodies.cpp NBodies.h SagA.data Animation.py
 	mpic++ $< NBodies.cpp -o Evolution.x;\
-	mpirun -np ${Np} ./Evolution.x ${steps} ${dt} ${jump} SagA.data
+	mpirun -np ${Np} ./Evolution.x 500000 0.0001 500 SagA.data;\
+	python3 Animation.py 14 0.0001 500
 
 EvolveRandom: Evolution.cpp NBodies.cpp NBodies.h Random
 	mpic++ $< NBodies.cpp -o Evolution.x;\
-	mpirun -np ${Np} ./Evolution.x ${steps} ${dt} ${jump} Random.txt 
+	mpirun -np ${Np} ./Evolution.x ${steps} ${dt} ${jump} Random.txt
 
 scaling: scaling.cpp NBodies.cpp NBodies.h scaling.sh Random parallel.py speedup.py
 	mpic++ $< NBodies.cpp -o scaling.x;\
@@ -39,4 +43,4 @@ strong: strong_scaling.sh scaling.sh random.cpp
 	python3 strong.py ${Np}
 
 clean:
-	rm -f *.x *.txt *.png *.out
+	rm -f *.x *.txt *.png *.out *.gif

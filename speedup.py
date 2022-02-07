@@ -1,11 +1,11 @@
 from numpy import loadtxt, arange
 import matplotlib.pyplot  as plt
-import sys
+from sys import argv
 
 y = loadtxt("scaling.txt")[:,1]
 x = arange(1,y.size+1)
 
-N = sys.argv[1]  
+N = argv[1]  
 T1=y[0]
 
 for i in x:
