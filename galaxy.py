@@ -32,7 +32,7 @@ def spiral_galaxy(N, max_mass, BHM, center, ini_radius, beta, alpha):
     ------------------------------------------------------------------------'''
     # Generates N random particles 
     positions = zeros(3*N)
-    momenta = zeros(3*N)
+    velocity= zeros(3*N)
     # Random masses varies between 1 solar mass and max_mass solar masses
     masses = random.random(N)*(max_mass-1.) + 1.
     #Parameters of the model of density of starts
@@ -62,16 +62,16 @@ def spiral_galaxy(N, max_mass, BHM, center, ini_radius, beta, alpha):
         positions[3*i+1] = Map[i]*(sin(gamma[i])*cos(beta)*cos(alpha)-
                                   cos(gamma[i])*sin(alpha))+ center[1]
         positions[3*i+2] = Map[i]*sin(gamma[i])*sin(beta) + center[2]
-        # Keplerina velocity to define the momentum in the plain of the disc 
+        # Keplerina velocity in the plain of the disc 
         Kep_v = sqrt(G*BHM/Map[i])
-        vec_mom=array([-Map[i]*(sin(gamma[i])*cos(alpha)-cos(gamma[i])*cos(beta)*sin(alpha)),
+        vec_vel=array([-Map[i]*(sin(gamma[i])*cos(alpha)-cos(gamma[i])*cos(beta)*sin(alpha)),
                        Map[i]*(cos(gamma[i])*cos(beta)*cos(alpha)+sin(gamma[i])*sin(alpha)), 
                        Map[i]*cos(gamma[i])*sin(beta)])/Map[i]
-        momenta[3*i+0] = masses[i]*Kep_v*vec_mom[0]
-        momenta[3*i+1] = masses[i]*Kep_v*vec_mom[1]
-        momenta[3*i+2] = masses[i]*Kep_v*vec_mom[2]
+        velocity[3*i+0] = Kep_v*vec_vel[0]
+        velocity[3*i+1] = Kep_v*vec_vel[1]
+        velocity[3*i+2] = Kep_v*vec_vel[2]
         
-    return masses, positions, momenta
+    return masses, positions, velocity
 
 # ----------------------------MAIN-------------------------------- #
 # Gravitational constant in units of kpc^3 M_sun^-1 Gyr-2
@@ -84,11 +84,11 @@ max_mass = 50. # Solar masses
 BHM = 1.e6 # Solar masses
 BHposition = array([.5, .5, .5]) # Location of the SBH
 #Parameters of the galaxy plane orientation 
-beta=pi*int(sys.argv[2])/10     #Inclination
-alpha=pi*int(sys.argv[3])/10    #Angle in the plain x,y
+beta=pi*float(sys.argv[2])     #Inclination
+alpha=pi*float(sys.argv[3])    #Angle in the plain x,y
 # Initial radius of the distribution
 ini_radius = 300 #kpc
-masses, positions, momenta = spiral_galaxy(N, max_mass, BHM, BHposition, ini_radius, beta, alpha)
+masses, positions, velocity = spiral_galaxy(N, max_mass, BHM, BHposition, ini_radius, beta, alpha)
 #Save
 print("#\t",N+1)
 print(BHposition[0],"\t", BHposition[1], "\t", BHposition[2],"\t0\t0\t0\t", BHM)
@@ -96,7 +96,7 @@ for ii in range(N):
     print("{:.6f}".format(positions[3*ii+0]),"\t",
           "{:.6f}".format(positions[3*ii+1]),"\t",
           "{:.6f}".format(positions[3*ii+2]),"\t",
-          "{:.6f}".format(momenta[3*ii+0]),"\t",
-          "{:.6f}".format(momenta[3*ii+1]),"\t",
-          "{:.6f}".format(momenta[3*ii+2]),"\t",
+          "{:.6f}".format(velocity[3*ii+0]),"\t",
+          "{:.6f}".format(velocity[3*ii+1]),"\t",
+          "{:.6f}".format(velocity[3*ii+2]),"\t",
           "{:.6f}".format(masses[ii]))
