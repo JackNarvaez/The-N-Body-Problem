@@ -74,20 +74,20 @@ def spiral_galaxy(N, max_mass, BHM, center, ini_radius, beta, alpha):
     return masses, positions, velocity
 
 # ----------------------------MAIN-------------------------------- #
-# Gravitational constant in units of kpc^3 M_sun^-1 Gyr-2
+# Gravitational constant in units of au^3 M_sun^-1 yr^-2
 G = 4*pi**2
 # Number of bodies (may be smaller according to the distribution chosen).
-N = int(sys.argv[1])
+N = int(sys.argv[1])-1
 # Mass of the N bodies.
 max_mass = 50. # Solar masses
 # Supermassive Central Black Hole data
 BHM = 1.e6 # Solar masses
-BHposition = array([.5, .5, .5]) # Location of the SBH
+BHposition = array([0., 0., 0.]) # Location of the SBH
 #Parameters of the galaxy plane orientation 
 beta=pi*float(sys.argv[2])     #Inclination
 alpha=pi*float(sys.argv[3])    #Angle in the plain x,y
 # Initial radius of the distribution
-ini_radius = 300 #kpc
+ini_radius = 300 #au
 masses, positions, velocity = spiral_galaxy(N, max_mass, BHM, BHposition, ini_radius, beta, alpha)
 #Save
 print("#\t",N+1)
