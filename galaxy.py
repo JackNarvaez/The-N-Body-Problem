@@ -56,6 +56,8 @@ def spiral_galaxy(N, max_mass, BHM, center, ini_radius, beta, alpha):
     for i in range(N):
         #Calls the function that maps the ramdom points to the wanted distribution for the radius 
         Map[i]=fsolve(func,0,args=(uf,Uniform[i]))*ini_radius
+        if Map[i] < 6:
+            Map[i] += 6 
         #Change to cartesian coordinates
         positions[3*i+0] = Map[i]*(cos(gamma[i])*cos(alpha)+
                                   sin(gamma[i])*cos(beta)*sin(alpha)) + center[0]

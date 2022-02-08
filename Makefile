@@ -1,19 +1,19 @@
-Ns = 100
-Ng = 10
-i = 0.4
-w = 0.1
-rep = 10
-Npv =$(shell nproc)
-Np = $(shell echo $$(($(Npv) / 2 )))
-steps = 500000
+Ns = 100 		#Number of particles in scailing
+Ng = 100		#Number of particles in the galaxy
+i = 0.4 		#Inclination of the galaxy
+w = 0.1 		#Angle in the xy plane of the galaxy
+rep = 10 		#Repetitions in the scaling
+Npv =$(shell nproc) 	#Number of threads
+Np = $(shell echo $$(($(Npv) / 2 ))) #Number of cores
+steps = 5000
 dt = 0.0001
-jump = 500
+jump = 5
 
 all: scaling
 
 Random: random.cpp
 	g++ $< -o random.x;\
-	./random.x ${Ns}
+nu	./random.x ${Ns}
 
 Galaxy: Evolution.cpp NBodies.cpp NBodies.h galaxy.py Animation.py
 	python3 galaxy.py ${Ng} ${i} ${w} > Galaxy.txt;\
