@@ -5,15 +5,15 @@ w = 0.1 		#Angle in the xy plane of the galaxy
 rep = 10 		#Repetitions in the scaling
 Npv =$(shell nproc) 	#Number of threads
 Np = $(shell echo $$(($(Npv) / 2 ))) #Number of cores
-steps = 5000
-dt = 0.0001
-jump = 5
+steps = 5000		#Steps in galaxy animation
+dt = 0.0001		#Step size in galaxy animation
+jump = 5		#Every jump steps it saves a frame
 
-all: scaling
+all: Galaxy
 
 Random: random.cpp
 	g++ $< -o random.x;\
-nu	./random.x ${Ns}
+	./random.x ${Ns}
 
 Galaxy: Evolution.cpp NBodies.cpp NBodies.h galaxy.py Animation.py
 	python3 galaxy.py ${Ng} ${i} ${w} > Galaxy.txt;\
@@ -25,10 +25,6 @@ SagA: Evolution.cpp NBodies.cpp NBodies.h SagA.data Animation.py
 	mpic++ $< NBodies.cpp -o Evolution.x;\
 	mpirun -np ${Np} ./Evolution.x 500000 0.0001 500 SagA.data;\
 	python3 Animation.py 14 0.0001 500
-
-EvolveRandom: Evolution.cpp NBodies.cpp NBodies.h Random
-	mpic++ $< NBodies.cpp -o Evolution.x;\
-	mpirun -np ${Np} ./Evolution.x ${steps} ${dt} ${jump} Random.txt
 
 scaling: scaling.cpp NBodies.cpp NBodies.h scaling.sh Random parallel.py speedup.py
 	mpic++ $< NBodies.cpp -o scaling.x;\
