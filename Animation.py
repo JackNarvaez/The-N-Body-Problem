@@ -13,16 +13,6 @@ jump = int(argv[3])    # Size jump
 x, y, z = loadtxt("Evolution.txt", unpack=1)    # Evolution
 steps = x.size // N # Printed steps
 
-System = empty((N, 3, steps))
-
-for jj in range(0,N):
-    for ii in range(0,steps):
-        System[jj,0, ii]= x[N*ii+jj]
-        System[jj,1, ii]= y[N*ii+jj]
-        System[jj,2, ii]= z[N*ii+jj]
-
-boundaries = max(System)
-
 def Gen_orbit(particle, time, dims=3):
     """-----------------------------------------------
     Create the orbit line using Evolution.txt
@@ -32,10 +22,10 @@ def Gen_orbit(particle, time, dims=3):
     time        :  Number of time steps.
     dims        :  Number of dimensions the orbit has.
     -----------------------------------------------"""
+    global N
     lineData = empty((dims, time))
-    lineData[:, 0] = System[particle, :,0]
-    for index in range(1, steps):
-        lineData[:, index] = System[particle, :, index]
+    for index in range(steps):
+        lineData[:, index] = [x[N*index+particle], y[N*index+particle], z[N*index+particle]]
 
     return lineData
 
@@ -54,6 +44,8 @@ ax = p3.Axes3D(fig)
 message = ax.text2D(0.00, 0.9, "", transform=ax.transAxes)
 # Nth orbits
 data = [Gen_orbit(ii, steps, 3) for ii in range(N)]
+
+boundaries = max(data)
 
 # Creating N orbit objects.
 orbits = [ax.plot(dat[0, 0:1], dat[1, 0:1], dat[2, 0:1])[0] for dat in data]
