@@ -39,7 +39,7 @@ int main(int argc, char **argv){
 
     // Position, Velocity and Acceleration arrays
     std::vector<double> Pos(4*len[pId],0.0);    // [x, y, z, mass]
-    std::vector<double> Vel(3*len[pId],0.0);    // []
+    std::vector<double> Vel(3*len[pId],0.0);    // [vx, vy, vz]
     std::vector<double> Acc(3*len[pId],0.0);  // [Fx, Fy, Fz]
 
     // Fill position and velocity vectors with the initial conditions
