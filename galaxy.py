@@ -57,8 +57,8 @@ def spiral_galaxy(N, max_mass, BHM, center, ini_radius, beta, alpha):
         #Calls the function that maps the ramdom points to the wanted distribution for the radius 
         Map[i]=fsolve(func,0,args=(uf,Uniform[i]))*ini_radius
         #In case radius is to small, add a value to avoid particles scaping
-        if Map[i] < 15:
-            Map[i] += 15 
+        if Map[i] < 50:
+            Map[i] += 50 
         #Change to cartesian coordinates
         positions[3*i+0] = Map[i]*(cos(gamma[i])*cos(alpha)+
                                   sin(gamma[i])*cos(beta)*sin(alpha)) + center[0]
@@ -90,7 +90,7 @@ BHposition = array([0., 0., 0.]) # Location of the SBH
 beta=pi*float(sys.argv[2])     #Inclination
 alpha=pi*float(sys.argv[3])    #Angle in the plain x,y
 # Initial radius of the distribution
-ini_radius = 300 #au
+ini_radius = 500 #au
 masses, positions, velocity = spiral_galaxy(N, max_mass, BHM, BHposition, ini_radius, beta, alpha)
 #Save
 print("#\t",N+1)

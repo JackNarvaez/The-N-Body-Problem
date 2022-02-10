@@ -1,16 +1,15 @@
 Ns = 100 		#Number of particles in scailing
-Ng = 100		#Number of particles in the galaxy
-i = 0.4 		#Inclination of the galaxy
-w = 0.1 		#Angle in the xy plane of the galaxy
-rep = 10 		#Repetitions in the scaling
+Ng = 300		#Number of particles in the galaxy
+i = 0.1 		#Inclination of the galaxy
+w = 0.6 		#Angle in the xy plane of the galaxy
+rep = 100 		#Repetitions in the scaling
 Npv =$(shell nproc) 	#Number of threads
 Np = $(shell echo $$(($(Npv) / 2 ))) #Number of cores
-steps = 5000		#Steps in galaxy animation
+steps = 8000		#Steps in galaxy animation
 dt = 0.0001		#Step size in galaxy animation
-jump = 5		#Every jump steps it saves a frame
+jump = 50		#Every jump steps it saves a frame
 
 all: Galaxy
-
 Random: random.cpp
 	g++ $< -o random.x;\
 	./random.x ${Ns}
