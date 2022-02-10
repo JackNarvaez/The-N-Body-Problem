@@ -32,10 +32,15 @@ scaling: scaling.cpp NBodies.cpp NBodies.h scaling.sh Random parallel.py speedup
 	python3 parallel.py ${Ns};\
 	python3 speedup.py ${Ns}
 
-strong: strong_scaling.sh scaling.sh random.cpp scailing.cpp NBodies.cpp NBodies.h
+strong: strong_scaling.sh scaling.sh random.cpp NBodies.cpp NBodies.h fit.cpp
 	mpic++ scaling.cpp  NBodies.cpp -o scaling.x
 	bash $<  ${Np};\
 	bash $< 1;\
+	g++ -std=c++17  fit.cpp -lgsl -lgslcblas -o fit.x;\
+	echo Number of proccesses: ${Np};\
+	./fit.x ${Np};\
+	echo Number of proccesses: 1;\
+	./fit.x 1;\
 	python3 strong.py ${Np}
 
 clean:
