@@ -45,18 +45,19 @@ message = ax.text2D(0.00, 0.9, "", transform=ax.transAxes)
 # Nth orbits
 data = [Gen_orbit(ii, steps, 3) for ii in range(N)]
 
-boundaries = max(data)
+boundaries = int(argv[4])
 
 # Creating N orbit objects.
 orbits = [ax.plot(dat[0, 0:1], dat[1, 0:1], dat[2, 0:1])[0] for dat in data]
 ax.plot(0, 0, "o", color="k")
 
 # Setting the axes properties
-ax.set_xlim3d([-boundaries, boundaries])
+if boundaries:
+    ax.set_xlim3d([-boundaries, boundaries])
+    ax.set_ylim3d([-boundaries, boundaries])
+    ax.set_zlim3d([-boundaries, boundaries])
 ax.set_xlabel('x [au]')
-ax.set_ylim3d([-boundaries, boundaries])
 ax.set_ylabel('y [au]')
-ax.set_zlim3d([-boundaries, boundaries])
 ax.set_zlabel('z [au]')
 
 # Creating the Animation object
