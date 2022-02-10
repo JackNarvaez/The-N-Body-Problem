@@ -73,7 +73,7 @@ void read_data(const std::string &File_address, std::vector<double>& Pos, std::v
     File.close();
 }
 
-void Initial_state(const std::string &File_address, std::vector<double>& Pos, std::vector<double>& Vel, std::vector<int>&len, const int & N, const int & tag, const int & pId, const int & nP, const int & root, MPI_Status status){
+void Initial_state(const std::string &File_address, std::vector<double>& Pos, std::vector<double>& Vel, std::vector<int>&lenP, std::vector<int>&lenV, std::vector<int>&disP, std::vector<int>&disV, const int & N, const int & pId, const int & nP, const int & root){
   /*---------------------------------------------------------------------------
   Initial_state:
   Process <root> reads the information about the initial configuration of the 
@@ -84,38 +84,27 @@ void Initial_state(const std::string &File_address, std::vector<double>& Pos, st
     File_address: File address from which the data is read.
     Pos   :   Position and mass of local particles (1D vector).
     Vel   :   Velocity of local particles (1D vector).
-    len   :   Number of particles to send to each process.
+    lenP  :   Position's vector length
+    VelP  :   Velocity's vector length
+    disP  :   Position's vector displacement 
+    disV  :   Velocity's vector displacement 
     N     :   Number of total particles.
-    tag   :   Message tag.
-	  pId   :   Process identity.
+    pId   :   Process identity.
     nP    :   Number of processes.
     root  :   Root process which reads data.
-    status:   Status object.
   ---------------------------------------------------------------------------*/
-  
+  //Reads data
   if(pId == root){
     std::vector<double> NPos;
     std::vector<double> NVel;
-    read_data(File_address, NPos, NVel);  // Read data
-    // Save local information
-    for(int ii=0; ii<4*len[root];ii++){
-	    Pos[ii]=NPos[ii];
-    }
-    for(int ii=0; ii<3*len[root];ii++){
-	    Vel[ii]=NVel[ii];
-    }
-    // Distribute data
-    int Lower;
-    for(int ii=0; ii<nP; ii++){
-      if (ii != root){
-        Lower = double(N)/nP*(ii);
-        MPI_Send(&NPos[4*Lower], 4*len[ii], MPI_DOUBLE, ii , tag, MPI_COMM_WORLD);
-        MPI_Send(&NVel[3*Lower], 3*len[ii], MPI_DOUBLE, ii , tag, MPI_COMM_WORLD);
-      }
-    }
-  }else{
-    MPI_Recv(&Pos[0], 4*len[pId], MPI_DOUBLE, root, tag, MPI_COMM_WORLD, &status);
-    MPI_Recv(&Vel[0], 3*len[pId], MPI_DOUBLE, root, tag, MPI_COMM_WORLD, &status);
+    read_data(File_address, NPos, NVel);
+    MPI_Scatterv(&NPos[0], &lenP[0], &disP[0], MPI_DOUBLE, &Pos[0], lenP[pId], MPI_DOUBLE, root, MPI_COMM_WORLD);
+    MPI_Scatterv(&NVel[0], &lenV[0], &disV[0], MPI_DOUBLE, &Vel[0], lenV[pId], MPI_DOUBLE, root, MPI_COMM_WORLD);
+  }
+  //Distributes data
+  else{
+    MPI_Scatterv(NULL, &lenP[0], &disP[0], MPI_DOUBLE, &Pos[0], lenP[pId], MPI_DOUBLE, root, MPI_COMM_WORLD);
+    MPI_Scatterv(NULL, &lenV[0], &disV[0], MPI_DOUBLE, &Vel[0], lenV[pId], MPI_DOUBLE, root, MPI_COMM_WORLD);
   }
 }
 
@@ -192,7 +181,7 @@ void Acceleration(const std::vector<double>& Pos, std::vector<double>& Acc, cons
   }
 }
 
-void Save_vec(std::ofstream& File, const std::vector<double>& Vec, const int & len){
+void Save_vec(std::ofstream& File, const std::vector<double>& Vec, const int & N){
   /*---------------------------------------------------------------------------
   Save_vec:
   Save a vector <Vec> in File.
@@ -203,7 +192,7 @@ void Save_vec(std::ofstream& File, const std::vector<double>& Vec, const int & l
     N     :   Size of N.
   ---------------------------------------------------------------------------*/
 
-  for (int ii = 0; ii < len; ii++){
+  for (int ii = 0; ii < N; ii++){
     File << Vec[4*ii]<< "\t" << Vec[4*ii+1] << "\t" << Vec[4*ii+2] << std::endl;
   }
 }
@@ -241,7 +230,7 @@ void Save_data(std::ofstream& File, const std::vector<double>& Pos, const std::v
     File.close(); 
   }else{
     MPI_Send(&Pos[0], 4*len[pId], MPI_DOUBLE, root, tag, MPI_COMM_WORLD);
-  }
+    }
 }
 
 void Euler(std::vector<double>& Pos, std::vector<double>& Vel, const std::vector<double>& Acc, const double &dt, const int & N){

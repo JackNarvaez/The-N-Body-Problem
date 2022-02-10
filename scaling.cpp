@@ -28,22 +28,30 @@ int main(int argc, char **argv){
     MPI_Comm_size(MPI_COMM_WORLD, &nP);
     MPI_Comm_rank(MPI_COMM_WORLD, &pId);
 
-    // Array size of each process
+    // Vector with lentghs and displacements of each proccess
     std::vector<int> len(nP, 0);
+    std::vector<int> lenP(nP, 0);
+    std::vector<int> lenV(nP, 0);
+    std::vector<int> disP(nP, 0);
+    std::vector<int> disV(nP, 0);
+    // Information of each proccess' vectors
     int end, begin;
     for(int ii=0; ii<nP; ii++){
         end = double(N)/nP*(ii+1);
         begin = double(N)/nP*ii;
         len[ii] = end-begin;
+	lenP[ii] = 4*len[ii];
+	lenV[ii] = 3*len[ii];
+	disP[ii] = 4*begin;
+	disV[ii] = 3*begin;
     }
-
     // Position, Velocity and Acceleration arrays
     std::vector<double> Pos(4*len[pId],0.0);    // [x, y, z, mass]
     std::vector<double> Vel(3*len[pId],0.0);    // [vx, vy, vz]
     std::vector<double> Acc(3*len[pId],0.0);  // [Fx, Fy, Fz]
 
     // Fill position and velocity vectors with the initial conditions
-    Initial_state(input, Pos, Vel, len, N,  tag, pId, nP, root, status);
+    Initial_state(input, Pos, Vel, lenP, lenV, disP, disV, N, pId, nP, root);
     // Calculate total acceleration felt by all particles
     double tstart{0.0};
     double tend{0.0};
