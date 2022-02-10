@@ -2,7 +2,7 @@ from numpy import array, zeros, random, sqrt, exp, pi, sin, cos
 import scipy.integrate as integrate
 from scipy.optimize import fsolve
 import matplotlib.pyplot as plt
-import sys
+from sys import argv
 
 def func(x,Distribution,Point): 
     """------------------------------------------------------------------------
@@ -80,17 +80,17 @@ def spiral_galaxy(N, max_mass, BHM, center, ini_radius, beta, alpha):
 # Gravitational constant in units of au^3 M_sun^-1 yr^-2
 G = 4*pi**2
 # Number of bodies (may be smaller according to the distribution chosen).
-N = int(sys.argv[1])-1
+N = int(argv[1])-1
 # Mass of the N bodies.
 max_mass = 50. # Solar masses
 # Supermassive Central Black Hole data
 BHM = 1.e6 # Solar masses
 BHposition = array([0., 0., 0.]) # Location of the SBH
 #Parameters of the galaxy plane orientation 
-beta=pi*float(sys.argv[2])     #Inclination
-alpha=pi*float(sys.argv[3])    #Angle in the plain x,y
+beta=pi*float(argv[2])     #Inclination
+alpha=pi*float(argv[3])    #Angle in the plain x,y
 # Initial radius of the distribution
-ini_radius = 500 #au
+ini_radius = float(argv[4]) #au
 masses, positions, velocity = spiral_galaxy(N, max_mass, BHM, BHposition, ini_radius, beta, alpha)
 #Save
 print("#\t",N+1)

@@ -17,6 +17,6 @@ plt.scatter(x,y,marker='+',color="k",label="Experimental")
 
 plt.xlabel("# Processes")
 plt.ylabel("speedup")
-plt.title(f"Speedup with N={N}({y.size//2} cores/{y.size} threads)")
+plt.title(f"Speedup with N={N} ({y.size//2} cores/{y.size} threads)")
 plt.legend()
 plt.savefig("speedup.png",dpi=200)

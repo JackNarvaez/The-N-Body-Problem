@@ -1,7 +1,7 @@
 /*-----------------------------------------------
-Evolution of a system of particles enclosed in a
-box of unit sides, the only interaction is 
-gravitation. The code implements the ring method.
+Evolution of a system of particles. The only 
+interaction is gravitation. 
+The code implements the ring method.
 -----------------------------------------------*/
 
 #include <mpi.h>
