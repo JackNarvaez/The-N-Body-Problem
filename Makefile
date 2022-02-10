@@ -3,20 +3,12 @@ Ng = 300		#Number of particles in the galaxy
 i = 0.1 		#Inclination of the galaxy (rads/pi)
 w = 0.6 		#Angle in the xy plane of the galaxy (rads/pi)
 rep = 100 		#Repetitions in the scaling
-<<<<<<< HEAD
 Npv =$(shell nproc) 	#Maximun number of threads
 Np = $(shell echo $$(($(Npv) / 2 ))) #Maximun number of cores
 steps = 7000		#Steps in galaxy animation
 dt = 0.0001		#Step size in galaxy animation
 jump = 50		#Every jump steps it saves a frame
 rad = 500		#Radius of Galaxy (AU)
-=======
-Npv =$(shell nproc) 	#Number of threads
-Np = $(shell echo $$(($(Npv) / 2 ))) #Number of cores
-steps = 7000		#Steps in galaxy animation
-dt = 0.0001		#Step size in galaxy animation
-jump = 40		#Every jump steps it saves a frame
->>>>>>> d5aea0d5ac854731a03017c8856cd9b37bfa531c
 
 all: Galaxy
 Random: random.cpp
