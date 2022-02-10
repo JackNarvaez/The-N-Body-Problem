@@ -5,9 +5,9 @@ w = 0.6 		#Angle in the xy plane of the galaxy
 rep = 100 		#Repetitions in the scaling
 Npv =$(shell nproc) 	#Number of threads
 Np = $(shell echo $$(($(Npv) / 2 ))) #Number of cores
-steps = 8000		#Steps in galaxy animation
+steps = 7000		#Steps in galaxy animation
 dt = 0.0001		#Step size in galaxy animation
-jump = 50		#Every jump steps it saves a frame
+jump = 40		#Every jump steps it saves a frame
 
 all: Galaxy
 Random: random.cpp
@@ -36,9 +36,9 @@ strong: strong_scaling.sh scaling.sh random.cpp NBodies.cpp NBodies.h fit.cpp
 	bash $<  ${Np};\
 	bash $< 1;\
 	g++ -std=c++17  fit.cpp -lgsl -lgslcblas -o fit.x;\
-	echo Number of proccesses: ${Np};\
+	echo Number of processes: ${Np};\
 	./fit.x ${Np};\
-	echo Number of proccesses: 1;\
+	echo Number of processes: 1;\
 	./fit.x 1;\
 	python3 strong.py ${Np}
 
