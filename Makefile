@@ -32,7 +32,7 @@ Scaling: scaling.cpp NBodies.cpp NBodies.h scaling.sh Random parallel.py speedup
 	python3 parallel.py ${Ns};\
 	python3 speedup.py ${Ns}
 
-Strong: strong_scaling.sh scaling.sh random.cpp NBodies.cpp NBodies.h fit.cpp
+Strong: strong_scaling.sh scaling.cpp random.cpp NBodies.cpp NBodies.h fit.cpp
 	mpic++ scaling.cpp  NBodies.cpp -o scaling.x
 	bash $<  ${Np};\
 	bash $< 1;\
