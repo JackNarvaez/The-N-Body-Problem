@@ -29,6 +29,8 @@ def spiral_galaxy(N, max_mass, BHM, center, ini_radius, beta, alpha):
        BHM          : Black Hole's mass
        center       : Black Hole position
        ini_radius   : Galaxy radius
+       beta         : Inclination
+       alpha        : Angle in the x,y plane
     ------------------------------------------------------------------------'''
     # Generates N random particles 
     positions = zeros(3*N)
@@ -76,30 +78,58 @@ def spiral_galaxy(N, max_mass, BHM, center, ini_radius, beta, alpha):
         
     return masses, positions, velocity
 
+def Data(pId, size, max_mass, BHM, BHposition, ini_radius, beta, alpha):
+    """------------------------------------------------------------------------
+    Data: 
+    Creates the information of each particle and saves into a file
+    ---------------------------------------------------------------------------
+    Arguments:
+       pId          : Process id
+       size         : Number of particles to each process
+       max_mass     : Biggest mass of the stars in the system 
+       BHM          : Black Hole's mass
+       BHposition   : Black Hole position
+       ini_radius   : Galaxy radius
+       beta         : Inclination
+       alpha        : Angle in the x,y plane
+    ------------------------------------------------------------------------"""
+    data = open("data"+str(pId)+".txt", "w")
+    data.write("#\t"+str(size)+"\n")
+    if pId == 0:
+        data.write(str(BHposition[0])+"\t"+str(BHposition[1])+"\t"+str(BHposition[2])+"\t0\t0\t0\t"+str(BHM)+"\n")
+        size -= 1
+    masses, positions, velocity = spiral_galaxy(size, max_mass, BHM, BHposition, ini_radius, beta, alpha)
+    #Save
+    for ii in range(size):
+        data.write(str("{:.6f}".format(positions[3*ii+0]))+"\t"+
+                   str("{:.6f}".format(positions[3*ii+1]))+"\t"+
+                   str("{:.6f}".format(positions[3*ii+2]))+"\t"+
+                   str("{:.6f}".format(velocity[3*ii+0]))+"\t"+
+                   str("{:.6f}".format(velocity[3*ii+1]))+"\t"+
+                   str("{:.6f}".format(velocity[3*ii+2]))+"\t"+
+                   str("{:.6f}".format(masses[ii]))+"\n")
+    data.close()
+
 # ----------------------------MAIN-------------------------------- #
 # Gravitational constant in units of au^3 M_sun^-1 yr^-2
 G = 4*pi**2
-# Number of bodies (may be smaller according to the distribution chosen).
-N = int(argv[1])-1
 # Mass of the N bodies.
 max_mass = 50. # Solar masses
-# Supermassive Central Black Hole data
-BHM = 1.e6 # Solar masses
-BHposition = array([0., 0., 0.]) # Location of the SBH
-#Parameters of the galaxy plane orientation 
+# Parameters of the galaxy plane orientation 
 beta=pi*float(argv[2])     #Inclination
 alpha=pi*float(argv[3])    #Angle in the plain x,y
 # Initial radius of the distribution
 ini_radius = float(argv[4]) #au
-masses, positions, velocity = spiral_galaxy(N, max_mass, BHM, BHposition, ini_radius, beta, alpha)
-#Save
-print("#\t",N+1)
-print(BHposition[0],"\t", BHposition[1], "\t", BHposition[2],"\t0\t0\t0\t", BHM)
-for ii in range(N):
-    print("{:.6f}".format(positions[3*ii+0]),"\t",
-          "{:.6f}".format(positions[3*ii+1]),"\t",
-          "{:.6f}".format(positions[3*ii+2]),"\t",
-          "{:.6f}".format(velocity[3*ii+0]),"\t",
-          "{:.6f}".format(velocity[3*ii+1]),"\t",
-          "{:.6f}".format(velocity[3*ii+2]),"\t",
-          "{:.6f}".format(masses[ii]))
+# Supermassive Central Black Hole data
+BHM = 1.e6 # Solar masses
+BHposition = array([0., 0., 0.]) # Location of the SBH
+
+# Number of processes
+nP = int(argv[5])
+# Number of bodies (may be smaller according to the distribution chosen).
+N = int(argv[1])
+# Partition between processes
+teil = float(N)/nP
+for pId in range(nP):
+    size = int(teil*(pId+1))-int(teil*pId)
+    Data(pId, size, max_mass, BHM, BHposition, ini_radius, beta, alpha)
