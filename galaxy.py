@@ -51,7 +51,6 @@ def spiral_galaxy(N, max_mass, BHM, center, ini_radius, beta, alpha):
     #Random angle generation
     gamma=random.random(N)*2*pi
     #Uniform distribution to get random points
-    random.seed(1)
     Uniform=random.random(N)
     #Empty array for the points mapped from the uniform distribution
     Map=zeros(N)   
@@ -123,10 +122,11 @@ ini_radius = float(argv[4]) #au
 # Supermassive Central Black Hole data
 BHM = 1.e6 # Solar masses
 BHposition = array([0., 0., 0.]) # Location of the SBH
-
+# Random Seed
+random.seed(1)
 # Number of processes
 nP = int(argv[5])
-# Number of bodies (may be smaller according to the distribution chosen).
+# Number of bodies.
 N = int(argv[1])
 # Partition between processes
 teil = float(N)/nP

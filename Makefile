@@ -5,10 +5,10 @@ w = 0.6 		#Angle in the xy plane of the galaxy (rads/pi)
 rep = 100 		#Repetitions in the scaling
 Npv =$(shell nproc) 	#Maximun number of threads
 Np = $(shell echo $$(($(Npv) / 2 ))) #Maximun number of cores
-steps = 7000		#Steps in galaxy animation
+steps = 70000		#Steps in galaxy animation
 dt = 0.0001		#Step size in galaxy animation
-jump = 50		#Every jump steps it saves a frame
-rad = 500		#Radius of Galaxy (AU)
+jump = 500		#Every jump steps it saves a frame
+rad = 5000		#Radius of Galaxy (AU)
 
 all: Galaxy
 Random: random.cpp
@@ -16,9 +16,9 @@ Random: random.cpp
 	./random.x ${Ns}
 
 Galaxy: Evolution.cpp NBodies.cpp NBodies.h galaxy.py Animation.py
-	python3 galaxy.py ${Ng} ${i} ${w} ${rad} > Galaxy.txt;\
+	python3 galaxy.py ${Ng} ${i} ${w} ${rad} ${Np};\
 	mpic++ $< NBodies.cpp -o Evolution.x;\
-	mpirun -np ${Np} ./Evolution.x ${steps} ${dt} ${jump} Galaxy.txt;\
+	mpirun -np ${Np} ./Evolution.x ${steps} ${dt} ${jump} ${Ng};\
 	python3 Animation.py ${Ng} ${dt} ${jump} ${rad} 
 
 SagA: Evolution.cpp NBodies.cpp NBodies.h SagA.data Animation.py

@@ -12,29 +12,7 @@ The code implements the ring method.
 #include <random>
 #include <cstdlib>
 #include <cmath>
-
-void read_NParticles(const std::string &File_address, int& N){
-  /*---------------------------------------------------------------------------
-  read_data:
-  Read number of particles from File_address.
-  The data is supposed to be in the first line such as #  N.
-  -----------------------------------------------------------------------------
-  Arguments:
-    File_address: File address from which the data is read.
-    N : Number of particles.
-  ---------------------------------------------------------------------------*/
-
-  std::ifstream File;
-  File.open (File_address, std::ifstream::in);    // Open file for reading
-  std::string line;
-  std::getline(File,line);
-  std::istringstream iss(line);   // Separate line in columns
-  std::string data;
-  iss >> data;  // Delete sign #
-  iss >> data;
-  N = std::atoi(data.c_str());
-  File.close();
-}
+#include <string>
 
 void read_data(const std::string &File_address, std::vector<double>& Pos, std::vector<double>& Vel){
   /*---------------------------------------------------------------------------
@@ -71,41 +49,6 @@ void read_data(const std::string &File_address, std::vector<double>& Pos, std::v
     }
     }
     File.close();
-}
-
-void Initial_state(const std::string &File_address, std::vector<double>& Pos, std::vector<double>& Vel, std::vector<int>&lenP, std::vector<int>&lenV, std::vector<int>&disP, std::vector<int>&disV, const int & N, const int & pId, const int & nP, const int & root){
-  /*---------------------------------------------------------------------------
-  Initial_state:
-  Process <root> reads the information about the initial configuration of the 
-  system, fills the vectors <Pos> and <Vel>, and finally it distributes data
-  among the other processes according to their <pId>.
-  -----------------------------------------------------------------------------
-  Arguments:
-    File_address: File address from which the data is read.
-    Pos   :   Position and mass of local particles (1D vector).
-    Vel   :   Velocity of local particles (1D vector).
-    lenP  :   Position's vector length
-    VelP  :   Velocity's vector length
-    disP  :   Position's vector displacement 
-    disV  :   Velocity's vector displacement 
-    N     :   Number of total particles.
-    pId   :   Process identity.
-    nP    :   Number of processes.
-    root  :   Root process which reads data.
-  ---------------------------------------------------------------------------*/
-  //Reads data
-  if(pId == root){
-    std::vector<double> NPos;
-    std::vector<double> NVel;
-    read_data(File_address, NPos, NVel);
-    MPI_Scatterv(&NPos[0], &lenP[0], &disP[0], MPI_DOUBLE, &Pos[0], lenP[pId], MPI_DOUBLE, root, MPI_COMM_WORLD);
-    MPI_Scatterv(&NVel[0], &lenV[0], &disV[0], MPI_DOUBLE, &Vel[0], lenV[pId], MPI_DOUBLE, root, MPI_COMM_WORLD);
-  }
-  //Distributes data
-  else{
-    MPI_Scatterv(NULL, &lenP[0], &disP[0], MPI_DOUBLE, &Pos[0], lenP[pId], MPI_DOUBLE, root, MPI_COMM_WORLD);
-    MPI_Scatterv(NULL, &lenV[0], &disV[0], MPI_DOUBLE, &Vel[0], lenV[pId], MPI_DOUBLE, root, MPI_COMM_WORLD);
-  }
 }
 
 void Gravitational_Acc(std::vector<double>& Acc, const std::vector<double>& vec0, const std::vector<double>& vec1, const int & len0, const int & len1){
