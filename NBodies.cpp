@@ -14,6 +14,8 @@ The code implements the ring method.
 #include <cmath>
 #include <string>
 
+using function = void(const std::vector<double>&, std::vector<double>&, const std::vector<int>&, const int &, const int &, const int &, const int &, const int &, MPI_Status);
+
 void read_data(const std::string &File_address, std::vector<double>& Pos, std::vector<double>& Vel){
   /*---------------------------------------------------------------------------
   read_data:
@@ -176,19 +178,19 @@ void Save_data(std::ofstream& File, const std::vector<double>& Pos, const std::v
     }
 }
 
-void Euler(std::vector<double>& Pos, std::vector<double>& Vel, const std::vector<double>& Acc, const double &dt, const int & N){
+void Euler(std::vector<double>& Pos, std::vector<double>& Vel, std::vector<double>& Acc, const double &dt, const int & N, function Accel, const std::vector<int>& len, const int & tag, const int & pId, const int & nP, const int & root, MPI_Status status){
   /*---------------------------------------------------------------------------
   Euler:
   Euler method to calculate next position and velocity.
   -----------------------------------------------------------------------------
   Arguments:
-
     Pos   :   Position of particles (1D vector)
     Vel   :   Velocity of particles (1D vector)
     Acc   :   Acceleration of particles in vec0 (1D vector)
     N     :   Local particles for each process.
   ---------------------------------------------------------------------------*/
-  for (int ii=0; ii < N; ii++){
+  Accel(Pos, Acc, len, N, tag, pId, nP, root, status);
+  for (int ii=0; ii < len[pId]; ii++){
     for (int jj=0; jj<3; jj++){
       Vel[3*ii+jj] += Acc[3*ii+jj]*dt;
       Pos[4*ii+jj] += Vel[3*ii+jj]*dt;
@@ -196,7 +198,83 @@ void Euler(std::vector<double>& Pos, std::vector<double>& Vel, const std::vector
   }
 }
 
-void Evolution(std::ofstream& File, std::vector<double>& Pos, std::vector<double>& Vel, std::vector<double>& Acc, const std::vector<int>& len, const int & N, const int & tag, const int & pId, const int & nP, const int & root, MPI_Status status, const int &steps, const double & dt, const int & jump){
+void PEFRL(std::vector<double>& Pos, std::vector<double>& Vel, std::vector<double>& Acc, const double &dt, const int & N, function Accel, const std::vector<int>& len, const int & tag, const int & pId, const int & nP, const int & root, MPI_Status status){
+  /*---------------------------------------------------------------------------
+  Euler:
+  Euler method to calculate next position and velocity.
+  -----------------------------------------------------------------------------
+  Arguments:
+    Pos   :   Position of particles (1D vector)
+    Vel   :   Velocity of particles (1D vector)
+    Acc   :   Acceleration of particles in vec0 (1D vector)
+    N     :   Local particles for each process.
+  ---------------------------------------------------------------------------*/
+  int local_particles = len[pId];
+  std::vector<double> X(Pos);
+  std::vector<double> V(Vel);
+
+  // Parameters
+  double xi = 0.1786178958448091e+0;
+  double gamma = -0.2123418310626054e+0;
+  double chi = -0.6626458266981849e-1;
+
+  // Main loop
+  for(int ii = 0; ii < local_particles; ii++){
+    for (int jj = 0; jj < 3; jj++){
+      X[4*ii+jj] += xi*dt*V[3*ii+jj];
+    }
+  }
+  std::fill (Acc.begin(),Acc.end(),0);
+  Accel(X, Acc, len, N, tag, pId, nP, root, status);
+  for (int ii = 0; ii < local_particles; ii++){
+    for (int jj = 0; jj < 3; jj++){
+      V[3*ii+jj] +=  0.5*(1.-2*gamma)*dt*Acc[3*ii+jj];
+    }
+  }
+  for (int ii = 0; ii < local_particles; ii++){
+    for (int jj = 0; jj < 3; jj++){
+      X[4*ii+jj] += chi*dt*V[3*ii+jj];
+    }
+  }
+  std::fill (Acc.begin(),Acc.end(),0);
+  Accel(X, Acc, len, N, tag, pId, nP, root, status);
+  for (int ii = 0; ii < local_particles; ii++){
+    for (int jj = 0; jj < 3; jj++){
+      V[3*ii+jj] += gamma*dt*Acc[3*ii+jj];
+    }
+  }
+  for (int ii = 0; ii < local_particles; ii++){
+    for (int jj = 0; jj < 3; jj++){
+      X[4*ii+jj] += (1.-2*(chi+xi))*dt*V[3*ii+jj];
+    }
+  }
+  std::fill (Acc.begin(),Acc.end(),0);
+  Accel(X, Acc, len, N, tag, pId, nP, root, status);
+  for (int ii = 0; ii < local_particles; ii++){
+    for (int jj = 0; jj < 3; jj++){
+      V[3*ii+jj] += gamma*dt*Acc[3*ii+jj];
+    }
+  }
+  for (int ii = 0; ii < local_particles; ii++){
+    for (int jj = 0; jj < 3; jj++){
+      X[4*ii+jj] += chi*dt*V[3*ii+jj];
+    }
+  }
+  std::fill (Acc.begin(),Acc.end(),0);
+  Accel(X, Acc, len, N, tag, pId, nP, root, status);
+  for (int ii = 0; ii < local_particles; ii++){
+    for (int jj = 0; jj < 3; jj++){
+      Vel[3*ii+jj] = V[3*ii+jj]+0.5*(1.-2*gamma)*dt*Acc[3*ii+jj];
+    }
+  }
+  for (int ii = 0; ii < local_particles; ii++){
+    for (int jj = 0; jj < 3; jj++){
+      Pos[4*ii+jj] = X[4*ii+jj]+xi*dt*Vel[3*ii+jj];
+    }
+  }
+}
+
+void Evolution(std::ofstream& File, std::vector<double>& Pos, std::vector<double>& Vel, std::vector<double>& Acc, const std::vector<int>& len, const int & N, const int & tag, const int & pId, const int & nP, const int & root, MPI_Status status, const int &steps, const double & dt, const int & jump, function Accel){
   /*---------------------------------------------------------------------------
   Evolution:
   Evolution of the system of particles under gravitational interactions.
@@ -223,8 +301,8 @@ void Evolution(std::ofstream& File, std::vector<double>& Pos, std::vector<double
   }
   Save_data(File, Pos, len, N, tag, pId, nP, root, status);
   for (int ii=0; ii<steps; ii++){
-    Acceleration(Pos, Acc, len, N, tag, pId, nP, root, status);
-    Euler(Pos, Vel, Acc, dt, len[pId]);
+    //Euler(Pos, Vel, Acc, dt, N, Accel, len, tag, pId, nP, root, status);
+    PEFRL(Pos, Vel, Acc, dt, N, Accel, len, tag, pId, nP, root, status);
     if ( ii%jump == 0) Save_data(File, Pos, len, N, tag, pId, nP, root, status);
     std::fill (Acc.begin(),Acc.end(),0);
   }
