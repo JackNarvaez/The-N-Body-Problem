@@ -18,8 +18,8 @@ int main(int argc, char **argv){
 
     int pId;  // Rank of process
     int nP;  // Number of processes
-    int tag{0};
-    int root{0};    // root process
+    int tag = 0;
+    int root = 0;    // root process
     int steps = atoi(argv[1]);
     double dt = atof(argv[2]);
     int jump = atoi(argv[3]);
