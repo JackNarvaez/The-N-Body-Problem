@@ -17,7 +17,7 @@ Random: random.cpp
 
 Galaxy: Evolution.cpp NBodies.cpp NBodies.h galaxy.py Animation.py
 	python3 galaxy.py ${Ng} ${i} ${w} ${rad} ${Np};\
-	mpic++ $< NBodies.cpp -o Evolution.x;\
+	mpic++ $< NBodies.cpp -std=c++11 -o Evolution.x;\
 	mpirun -np ${Np} ./Evolution.x ${steps} ${dt} ${jump} ${Ng};\
 	python3 Animation.py ${Ng} ${dt} ${jump} ${rad} 
 
