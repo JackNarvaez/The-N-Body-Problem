@@ -18,8 +18,8 @@ int main(int argc, char **argv){
 
     int pId;  // Rank of process
     int nP;  // Number of processes
-    int tag = 0;
-    int root = 0;    // root process
+    int tag{0};
+    int root{0};    // root process
     int steps = atoi(argv[1]);
     double dt = atof(argv[2]);
     int jump = atoi(argv[3]);
@@ -43,16 +43,17 @@ int main(int argc, char **argv){
         len[ii] = end-begin;
     }
     // Position, Velocity and Acceleration arrays
-    std::vector<double> Pos;    // [x, y, z, mass]
+    std::vector<double> Pos;    // [x, y, z]
+    std::vector<double> Mass;    // [mass]
     std::vector<double> Vel;    // [vx, vy, vz]
     std::vector<double> Acc(3*len[pId],0.0);   // [ax, ay, az]
     // Fill position and velocity vectors with the initial conditions
-    read_data(input, Pos, Vel);
+    read_data(input, Pos, Vel, Mass);
     // Calculate total acceleration felt by all particles
-    Acceleration(Pos, Acc, len, N, tag, pId, nP, root, status);
+    //Acceleration(Pos, Mass, Acc, len, N, tag, pId, nP, root, status);
     //Save the Position felt by all particles
     std::ofstream Data;
-    Evolution(Data, Pos, Vel, Acc, len, N, tag, pId, nP, root, status, steps, dt, jump, Acceleration);
+    Evolution(Data, Pos, Vel, Mass, Acc, len, N, tag, pId, nP, root, status, steps, dt, jump, Acceleration);
     /*Finalizes MPI*/
     MPI_Finalize();
 
