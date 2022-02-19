@@ -15,6 +15,7 @@ The code implements the ring method.
 #include <string>
 
 using function = void(const std::vector<double>&, const std::vector<double>&, std::vector<double>&, const std::vector<int>&, const int &, const int &, const int &, const int &, const int &, MPI_Status);
+using Integrator = void(std::vector<double>&, std::vector<double>&, const std::vector<double>&, std::vector<double>&, const double &, const int &, function, const std::vector<int>&, const int &, const int &, const int &, const int &, MPI_Status);
 
 void read_data(const std::string &File_address, std::vector<double>& Pos, std::vector<double>& Vel, std::vector<double>& Mass){
   /*---------------------------------------------------------------------------
@@ -283,7 +284,7 @@ void PEFRL(std::vector<double>& Pos, std::vector<double>& Vel, const std::vector
   }
 }
 
-void Evolution(std::ofstream& File, std::vector<double>& Pos, std::vector<double>& Vel, const std::vector<double>& Mass, std::vector<double>& Acc, const std::vector<int>& len, const int & N, const int & tag, const int & pId, const int & nP, const int & root, MPI_Status status, const int &steps, const double & dt, const int & jump, function Accel){
+void Evolution(std::ofstream& File, std::vector<double>& Pos, std::vector<double>& Vel, const std::vector<double>& Mass, std::vector<double>& Acc, const std::vector<int>& len, const int & N, const int & tag, const int & pId, const int & nP, const int & root, MPI_Status status, const int &steps, const double & dt, const int & jump, function Accel, Integrator evol){
   /*---------------------------------------------------------------------------
   Evolution:
   Evolution of the system of particles under gravitational interactions.
@@ -310,8 +311,7 @@ void Evolution(std::ofstream& File, std::vector<double>& Pos, std::vector<double
   }
   Save_data(File, Pos, len, N, tag, pId, nP, root, status);
   for (int ii=0; ii<steps; ii++){
-    //Euler(Pos, Vel, Mass, Acc, dt, N, Accel, len, tag, pId, nP, root, status);
-    PEFRL(Pos, Vel, Mass, Acc, dt, N, Accel, len, tag, pId, nP, root, status);
+    evol(Pos, Vel, Mass, Acc, dt, N, Accel, len, tag, pId, nP, root, status);
     if ( ii%jump == 0) Save_data(File, Pos, len, N, tag, pId, nP, root, status);
     std::fill (Acc.begin(),Acc.end(),0);
   }

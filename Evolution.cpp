@@ -53,7 +53,7 @@ int main(int argc, char **argv){
     //Acceleration(Pos, Mass, Acc, len, N, tag, pId, nP, root, status);
     //Save the Position felt by all particles
     std::ofstream Data;
-    Evolution(Data, Pos, Vel, Mass, Acc, len, N, tag, pId, nP, root, status, steps, dt, jump, Acceleration);
+    Evolution(Data, Pos, Vel, Mass, Acc, len, N, tag, pId, nP, root, status, steps, dt, jump, Acceleration, PEFRL);
     /*Finalizes MPI*/
     MPI_Finalize();
 
