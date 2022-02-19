@@ -1,10 +1,11 @@
 Ns = 1000 		#Number of particles in scailing
-Ng = 100		#Number of particles in the galaxy
+Ng = 10		#Number of particles in the galaxy
 i = 0.1 		#Inclination of the galaxy (rads/pi)
 w = 0.6 		#Angle in the xy plane of the galaxy (rads/pi)
 rep = 100 		#Repetitions in the scaling
-Npv = 4         	#Maximun number of threads
-Np = 2                   #Maximun number of cores
+Npv =$(shell nproc) 	#Maximun number of threads
+Np = $(shell echo $$(($(Npv) / 2 ))) #Maximun number of cores
+#Np = 2 Mac compatibility
 steps = 10000		#Steps in galaxy animation
 dt = 0.001		#Step size in galaxy animation
 jump = 100		#Every jump steps it saves a frame
@@ -17,7 +18,7 @@ Random: random.cpp
 
 Galaxy: Evolution.cpp NBodies.cpp NBodies.h galaxy.py Animation.py
 	python3 galaxy.py ${Ng} ${i} ${w} ${rad} ${Np};\
-	mpic++ $< NBodies.cpp -std=c++11 -o Evolution.x;\
+	mpic++ $< NBodies.cpp -o Evolution.x;\
 	mpirun -np ${Np} ./Evolution.x ${steps} ${dt} ${jump} ${Ng};\
 	python3 Animation.py ${Ng} ${dt} ${jump} ${rad} 
 
