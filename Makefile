@@ -1,5 +1,5 @@
 Ns = 1000 		#Number of particles in scailing
-Ng = 100		#Number of particles in the galaxy
+Ng = 100			#Number of particles in the galaxy
 i = 0.1 		#Inclination of the galaxy (rads/pi)
 w = 0.6 		#Angle in the xy plane of the galaxy (rads/pi)
 rep = 100 		#Repetitions in the scaling

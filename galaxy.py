@@ -44,7 +44,7 @@ def spiral_galaxy(N, max_mass, BHM, center, ini_radius, beta, alpha):
     const_disc=.8
     bulb_radius=0.2
     #Model of density normalized
-    f1 = lambda x: initial_density*exp(-x**(1/4)/const_bulb)        #Bulb
+    f1 = lambda x: initial_density*exp(-x**(1/4)/const_bulb)        #Bulge
     f2 = lambda x: f1(bulb_radius)*exp(-(x-bulb_radius)/const_disc) #Disc
     f = lambda x:  f1(x) if x<bulb_radius else f2(x)                #Piecewise 
     norm = integrate.quad(f,0,1)[0]                                  
@@ -65,6 +65,11 @@ def spiral_galaxy(N, max_mass, BHM, center, ini_radius, beta, alpha):
         #In case radius is to small, add a value to avoid particles scaping
         if Map[i] < 50:
             Map[i] += 50
+        #Creates an elipsoid in the region of the bulge
+        if Map[i] < bulb_radius*ini_radius:
+            a = 0.18*ini_radius
+            bulg_countour = a*sqrt(1-(Map[i]/(bulb_radius*ini_radius))**2)
+            gross[i] = random.random(1)*2*bulg_countour-bulg_countour
         #Adjustment for width
         beta += arctan(gross[i]/Map[i])
         Map[i] = sqrt(Map[i]**2+gross[i]**2)
