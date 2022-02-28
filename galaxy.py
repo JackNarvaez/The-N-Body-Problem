@@ -1,4 +1,4 @@
-from numpy import array, zeros, random, sqrt, exp, pi, sin, cos
+from numpy import array, zeros, random, sqrt, exp, pi, sin, cos, arctan
 import scipy.integrate as integrate
 from scipy.optimize import fsolve
 import matplotlib.pyplot as plt
@@ -50,9 +50,13 @@ def spiral_galaxy(N, max_mass, BHM, center, ini_radius, beta, alpha):
     norm = integrate.quad(f,0,1)[0]                                  
     uf=lambda x: f(x)/norm                                          #Density function with integral=1
     #Random angle generation
-    gamma=random.random(N)*2*pi
+    gamma = random.random(N)*2*pi
+    #Random width
+    width = .05*ini_radius                                          #Half of with in relation to the radius of the galaxy
+    gross  = random.random(N)*2*width-width
+    temp = beta
     #Uniform distribution to get random points
-    Uniform=random.random(N)
+    Uniform = random.random(N)
     #Empty array for the points mapped from the uniform distribution
     Map=zeros(N)   
     for i in range(N):
@@ -60,7 +64,10 @@ def spiral_galaxy(N, max_mass, BHM, center, ini_radius, beta, alpha):
         Map[i]=fsolve(func,0,args=(uf,Uniform[i]))*ini_radius
         #In case radius is to small, add a value to avoid particles scaping
         if Map[i] < 50:
-            Map[i] += 50 
+            Map[i] += 50
+        #Adjustment for width
+        beta += arctan(gross[i]/Map[i])
+        Map[i] = sqrt(Map[i]**2+gross[i]**2)
         #Change to cartesian coordinates
         positions[3*i+0] = Map[i]*(cos(gamma[i])*cos(alpha)+
                                   sin(gamma[i])*cos(beta)*sin(alpha)) + center[0]
@@ -75,7 +82,7 @@ def spiral_galaxy(N, max_mass, BHM, center, ini_radius, beta, alpha):
         velocity[3*i+0] = Kep_v*vec_vel[0]
         velocity[3*i+1] = Kep_v*vec_vel[1]
         velocity[3*i+2] = Kep_v*vec_vel[2]
-        
+        beta = temp
     return masses, positions, velocity
 
 def Data(pId, size, max_mass, BHM, BHposition, ini_radius, beta, alpha):
