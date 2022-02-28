@@ -2,6 +2,7 @@ from numpy import array, zeros, random, sqrt, exp, pi, sin, cos
 import scipy.integrate as integrate
 from scipy.optimize import fsolve
 import matplotlib.pyplot as plt
+from mpi4py import MPI
 from sys import argv
 
 def func(x,Distribution,Point): 
@@ -110,6 +111,10 @@ def Data(pId, size, max_mass, BHM, BHposition, ini_radius, beta, alpha):
     data.close()
 
 # ----------------------------MAIN-------------------------------- #
+#MPI Initialize 
+comm = MPI.COMM_WORLD
+pId = comm.Get_rank()
+nP = comm.Get_size()
 # Gravitational constant in units of au^3 M_sun^-1 yr^-2
 G = 4*pi**2
 # Mass of the N bodies.
@@ -123,13 +128,10 @@ ini_radius = float(argv[4]) #au
 BHM = 1.e6 # Solar masses
 BHposition = array([0., 0., 0.]) # Location of the SBH
 # Random Seed
-random.seed(1)
-# Number of processes
-nP = int(argv[5])
+random.seed(pId)
 # Number of bodies.
 N = int(argv[1])
 # Partition between processes
 teil = float(N)/nP
-for pId in range(nP):
-    size = int(teil*(pId+1))-int(teil*pId)
-    Data(pId, size, max_mass, BHM, BHposition, ini_radius, beta, alpha)
+size = int(teil*(pId+1))-int(teil*pId)
+Data(pId, size, max_mass, BHM, BHposition, ini_radius, beta, alpha)
