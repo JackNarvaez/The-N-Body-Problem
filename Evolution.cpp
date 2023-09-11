@@ -35,7 +35,8 @@ int main(int argc, char **argv){
     std::string extension = ".txt";
     std::string input = data + id + extension;
     // Length of each proccess' vectors
-    std::vector<int> len(nP, 0);
+    int * len = (int *) malloc(nP * sizeof(int));
+    // std::vector<int> len(nP, 0);
     int end, begin;
     for(int ii=0; ii<nP; ii++){
         end = double(N)/nP*(ii+1);
