@@ -44,12 +44,16 @@ int main(int argc, char **argv){
         len[ii] = end-begin;
     }
     // Position, Velocity and Acceleration arrays
-    std::vector<double> Pos;    // [x, y, z]
-    std::vector<double> Mass;    // [mass]
-    std::vector<double> Vel;    // [vx, vy, vz]
-    std::vector<double> Acc(3*len[pId],0.0);   // [ax, ay, az]
+    double * Pos = (double *) malloc(3*len[pId]*sizeof(double));    // [x, y, z]
+    double * Vel = (double *) malloc(3*len[pId]*sizeof(double));    // [vx, vy, vz]
+    double * Acc = (double *) malloc(3*len[pId]*sizeof(double));    // [ax, ay, az]
+    double * Mass = (double *) malloc(len[pId]*sizeof(double));    // [m]
+    
+    for (int ii = 0; ii < 3*len[pId]; ii++) Acc[ii] = 0.0;
+
     // Fill position and velocity vectors with the initial conditions
     read_data(input, Pos, Vel, Mass);
+
     // Calculate total acceleration felt by all particles
     //Acceleration(Pos, Mass, Acc, len, N, tag, pId, nP, root, status);
     //Save the Position felt by all particles

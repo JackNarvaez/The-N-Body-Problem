@@ -14,10 +14,10 @@ The code implements the ring method.
 #include <cmath>
 #include <string>
 
-using function = void(const std::vector<double>&, const std::vector<double>&, std::vector<double>&, const int *, const int &, const int &, const int &, const int &, const int &, MPI_Status);
-using Integrator = void(std::vector<double>&, std::vector<double>&, const std::vector<double>&, std::vector<double>&, const double &, const int &, function, const int *, const int &, const int &, const int &, const int &, MPI_Status);
+using function = void(const double *, const double *, double *, const int *, const int &, const int &, const int &, const int &, const int &, MPI_Status);
+using Integrator = void(double *, double *, const double *, double *, const double &, const int &, function, const int *, const int &, const int &, const int &, const int &, MPI_Status);
 
-void read_data(const std::string &File_address, std::vector<double>& Pos, std::vector<double>& Vel, std::vector<double>& Mass){
+void read_data(const std::string &File_address, double * Pos, double * Vel, double * Mass){
   /*---------------------------------------------------------------------------
   read_data:
   Read data about position, velocity and mass of particles.
@@ -32,6 +32,7 @@ void read_data(const std::string &File_address, std::vector<double>& Pos, std::v
   std::ifstream File;
   File.open (File_address, std::ifstream::in);    // Open file for reading
   std::string line;
+  int row = 0;
 	while (!File.eof()){
 	  std::getline(File,line);
     // Omit empty lines and comments #
@@ -42,20 +43,21 @@ void read_data(const std::string &File_address, std::vector<double>& Pos, std::v
       std::string data;       
       for (int ii=0; ii < 3; ii++){
         iss >> data;
-        Pos.push_back(atof(data.c_str()));  // Position
+        Pos[ii + 3*row] = atof(data.c_str());  // Position
       }
       for (int ii=0; ii < 3; ii++){
         iss >> data;
-        Vel.push_back(atof(data.c_str()));  // Velocity
+        Vel[ii + 3*row] = atof(data.c_str());  // Velocity
       }
       iss >> data;
-      Mass.push_back(atof(data.c_str()));  // Mass
+      Mass[row] = atof(data.c_str());  // Mass
+      row += 1;
     }
     }
     File.close();
 }
 
-void Gravitational_Acc(std::vector<double>& Acc, const std::vector<double>& Pos0, const std::vector<double>& Pos1, const std::vector<double>& Mass1, const int & len0, const int & len1){
+void Gravitational_Acc(double * Acc, const double * Pos0, const double * Pos1, const double * Mass1, const int & len0, const int & len1){
   /*---------------------------------------------------------------------------
   Gravitational_Acc:
   Calculate the gravitational acceleration on particles in <Pos0> due to particles in 
@@ -83,7 +85,7 @@ void Gravitational_Acc(std::vector<double>& Acc, const std::vector<double>& Pos0
   }
 }
 
-void Acceleration(const std::vector<double>& Pos, const std::vector<double>& Mass, std::vector<double>& Acc, const int * len, const int & N, const int & tag, const int & pId, const int & nP, const int & root, MPI_Status status){
+void Acceleration(const double * Pos, const double * Mass, double * Acc, const int * len, const int & N, const int & tag, const int & pId, const int & nP, const int & root, MPI_Status status){
   /*---------------------------------------------------------------------------
   Acceleration:
   Calculate the gravitational acceleration for each particle due to all others.
@@ -103,32 +105,49 @@ void Acceleration(const std::vector<double>& Pos, const std::vector<double>& Mas
 
   //  Temporal arrays for saving data of shared particles along the ring
   int max = (N/nP+1);
-  std::vector<double> BufferPos(Pos);
-  std::vector<double> BufferMass(Mass);
-  BufferPos.insert(BufferPos.end(), 3, 0);
-  BufferMass.push_back(0);
-  std::vector<double> Buffer2Pos(3*max, 0);
-  std::vector<double> Buffer2Mass(max, 0);
+
+  double *BufferPos = (double *) malloc(3*(len[pId]+1)*sizeof(double));
+  double *BufferMass = (double *) malloc((len[pId]+1)*sizeof(double));
+  double *Buffer2Pos = (double *) malloc(3*max*sizeof(double));
+  double *Buffer2Mass = (double *) malloc(max*sizeof(double));
+    
+  for (int ii=0; ii < len[pId]; ii++){
+    BufferPos[3*ii] = Pos[3*ii];
+    BufferPos[3*ii+1] = Pos[3*ii+1];
+    BufferPos[3*ii+2] = Pos[3*ii+2];
+    BufferMass[ii] = Mass[ii];
+    Buffer2Pos[3*ii] = 0.0;
+    Buffer2Pos[3*ii+1] = 0.0;
+    Buffer2Pos[3*ii+2] = 0.0;
+    Buffer2Mass[ii] = 0.0;
+  }
+
+
+  BufferPos[3*len[pId]] = 0.0;
+  BufferPos[3*len[pId]+1] = 0.0;
+  BufferPos[3*len[pId]+2] = 0.0;
+  BufferMass[len[pId]] = 0.0;
   
   //  Gravitational acceleration due to local particles
   Gravitational_Acc(Acc, Pos, BufferPos, Mass, len[pId], len[pId]);
   
-  //  Ring method 
+
+  //  Ring method
   int dst= (pId+1)%nP;
   int scr= (pId-1+nP)%nP;
   for (int jj=0; jj<nP-1; jj++){
     if (pId%2==0){
-      MPI_Send(&BufferPos[0], 3*max, MPI_DOUBLE, dst , tag, MPI_COMM_WORLD);
-      MPI_Recv(&BufferPos[0], 3*max, MPI_DOUBLE, scr, tag, MPI_COMM_WORLD, &status);
-      MPI_Send(&BufferMass[0], max, MPI_DOUBLE, dst , tag, MPI_COMM_WORLD);
-      MPI_Recv(&BufferMass[0], max, MPI_DOUBLE, scr, tag, MPI_COMM_WORLD, &status);
+      MPI_Send(BufferPos, 3*max, MPI_DOUBLE, dst , tag, MPI_COMM_WORLD);
+      MPI_Recv(BufferPos, 3*max, MPI_DOUBLE, scr, tag, MPI_COMM_WORLD, &status);
+      MPI_Send(BufferMass, max, MPI_DOUBLE, dst , tag, MPI_COMM_WORLD);
+      MPI_Recv(BufferMass, max, MPI_DOUBLE, scr, tag, MPI_COMM_WORLD, &status);
       Gravitational_Acc(Acc, Pos, BufferPos, BufferMass, len[pId], len[(scr-jj+nP)%nP]);
     }
     else{
-      MPI_Recv(&Buffer2Pos[0], 3*max, MPI_DOUBLE, scr, tag, MPI_COMM_WORLD, &status);
-      MPI_Send(&BufferPos[0], 3*max, MPI_DOUBLE, dst, tag, MPI_COMM_WORLD);
-      MPI_Recv(&Buffer2Mass[0], max, MPI_DOUBLE, scr, tag, MPI_COMM_WORLD, &status);
-      MPI_Send(&BufferMass[0], max, MPI_DOUBLE, dst, tag, MPI_COMM_WORLD);
+      MPI_Recv(Buffer2Pos, 3*max, MPI_DOUBLE, scr, tag, MPI_COMM_WORLD, &status);
+      MPI_Send(BufferPos, 3*max, MPI_DOUBLE, dst, tag, MPI_COMM_WORLD);
+      MPI_Recv(Buffer2Mass, max, MPI_DOUBLE, scr, tag, MPI_COMM_WORLD, &status);
+      MPI_Send(BufferMass, max, MPI_DOUBLE, dst, tag, MPI_COMM_WORLD);
       Gravitational_Acc(Acc, Pos, Buffer2Pos, Buffer2Mass, len[pId], len[(scr-jj+nP)%nP]);
       BufferPos = Buffer2Pos;
       BufferMass = Buffer2Mass;
@@ -136,7 +155,7 @@ void Acceleration(const std::vector<double>& Pos, const std::vector<double>& Mas
   }
 }
 
-void Save_vec(std::ofstream& File, const std::vector<double>& Vec, const int & N){
+void Save_vec(std::ofstream& File, const double * Vec, const int & N){
   /*---------------------------------------------------------------------------
   Save_vec:
   Save a vector <Vec> in File.
@@ -152,7 +171,7 @@ void Save_vec(std::ofstream& File, const std::vector<double>& Vec, const int & N
   }
 }
 
-void Save_data(std::ofstream& File, const std::vector<double>& Pos, const int * len, const int & N, const int & tag, const int & pId, const int & nP, const int & root, MPI_Status status){
+void Save_data(std::ofstream& File, const double * Pos, const int * len, const int & N, const int & tag, const int & pId, const int & nP, const int & root, MPI_Status status){
   /*---------------------------------------------------------------------------
   Save_Data:
   Save the Position of all particles in Evolution.txt.
@@ -175,20 +194,22 @@ void Save_data(std::ofstream& File, const std::vector<double>& Pos, const int * 
     std::cout<<std::scientific;
     File.open("Evolution.txt",std::fstream::app);
     Save_vec(File, Pos, len[root]);
-    std::vector<double> Temp(3*(N/nP+1),0.0);
+    double * Temp = (double *) malloc(3*(N/nP+1)*sizeof(double));
+    for (int ii=0; ii < 3*(N/nP+1); ii++) Temp[ii] = 0.0;
+    // std::vector<double> Temp(3*(N/nP+1),0.0);
     for (int ii =0; ii < nP; ii++){
       if (ii != pId){
-        MPI_Recv(&Temp[0], 3*len[ii], MPI_DOUBLE, ii, tag, MPI_COMM_WORLD, &status);
+        MPI_Recv(Temp, 3*len[ii], MPI_DOUBLE, ii, tag, MPI_COMM_WORLD, &status);
         Save_vec(File, Temp,  len[ii]);
       }  
     }
     File.close(); 
   }else{
-    MPI_Send(&Pos[0], 3*len[pId], MPI_DOUBLE, root, tag, MPI_COMM_WORLD);
+    MPI_Send(Pos, 3*len[pId], MPI_DOUBLE, root, tag, MPI_COMM_WORLD);
     }
 }
 
-void Euler(std::vector<double>& Pos, std::vector<double>& Vel, const std::vector<double>& Mass, std::vector<double>& Acc, const double &dt, const int & N, function Accel, const int * len, const int & tag, const int & pId, const int & nP, const int & root, MPI_Status status){
+void Euler(double * Pos, double * Vel, const double * Mass, double * Acc, const double &dt, const int & N, function Accel, const int * len, const int & tag, const int & pId, const int & nP, const int & root, MPI_Status status){
   /*---------------------------------------------------------------------------
   Euler:
   Euler method to calculate next position and velocity.
@@ -208,7 +229,7 @@ void Euler(std::vector<double>& Pos, std::vector<double>& Vel, const std::vector
   }
 }
 
-void PEFRL(std::vector<double>& Pos, std::vector<double>& Vel, const std::vector<double>& Mass, std::vector<double>& Acc, const double &dt, const int & N, function Accel, const int * len, const int & tag, const int & pId, const int & nP, const int & root, MPI_Status status){
+void PEFRL(double * Pos, double * Vel, const double * Mass, double *Acc, const double &dt, const int & N, function Accel, const int * len, const int & tag, const int & pId, const int & nP, const int & root, MPI_Status status){
   /*---------------------------------------------------------------------------
   Euler:
   Euler method to calculate next position and velocity.
@@ -220,8 +241,11 @@ void PEFRL(std::vector<double>& Pos, std::vector<double>& Vel, const std::vector
     N     :   Local particles for each process.
   ---------------------------------------------------------------------------*/
   int local_particles = len[pId];
-  std::vector<double> X(Pos);
-  std::vector<double> V(Vel);
+  double * X = (double *) malloc(3*local_particles*sizeof(double));
+  double * V = (double *) malloc(3*local_particles*sizeof(double));
+
+  X = Pos;
+  V = Vel;
 
   // Parameters
   double xi = 0.1786178958448091e+0;
@@ -234,7 +258,7 @@ void PEFRL(std::vector<double>& Pos, std::vector<double>& Vel, const std::vector
       X[3*ii+jj] += xi*dt*V[3*ii+jj];
     }
   }
-  std::fill (Acc.begin(),Acc.end(),0);
+  for (int ii = 0; ii < 3*local_particles; ii++) Acc[ii] = 0.0;
   Accel(X, Mass, Acc, len, N, tag, pId, nP, root, status);
   for (int ii = 0; ii < local_particles; ii++){
     for (int jj = 0; jj < 3; jj++){
@@ -246,7 +270,7 @@ void PEFRL(std::vector<double>& Pos, std::vector<double>& Vel, const std::vector
       X[3*ii+jj] += chi*dt*V[3*ii+jj];
     }
   }
-  std::fill (Acc.begin(),Acc.end(),0);
+  for (int ii = 0; ii < 3*local_particles; ii++) Acc[ii] = 0.0;
   Accel(X, Mass, Acc, len, N, tag, pId, nP, root, status);
   for (int ii = 0; ii < local_particles; ii++){
     for (int jj = 0; jj < 3; jj++){
@@ -258,7 +282,7 @@ void PEFRL(std::vector<double>& Pos, std::vector<double>& Vel, const std::vector
       X[3*ii+jj] += (1.-2*(chi+xi))*dt*V[3*ii+jj];
     }
   }
-  std::fill (Acc.begin(),Acc.end(),0);
+  for (int ii = 0; ii < 3*local_particles; ii++) Acc[ii] = 0.0;
   Accel(X, Mass, Acc, len, N, tag, pId, nP, root, status);
   for (int ii = 0; ii < local_particles; ii++){
     for (int jj = 0; jj < 3; jj++){
@@ -270,7 +294,7 @@ void PEFRL(std::vector<double>& Pos, std::vector<double>& Vel, const std::vector
       X[3*ii+jj] += chi*dt*V[3*ii+jj];
     }
   }
-  std::fill (Acc.begin(),Acc.end(),0);
+  for (int ii = 0; ii < 3*local_particles; ii++) Acc[ii] = 0.0;
   Accel(X, Mass, Acc, len, N, tag, pId, nP, root, status);
   for (int ii = 0; ii < local_particles; ii++){
     for (int jj = 0; jj < 3; jj++){
@@ -284,7 +308,7 @@ void PEFRL(std::vector<double>& Pos, std::vector<double>& Vel, const std::vector
   }
 }
 
-void Evolution(std::ofstream& File, std::vector<double>& Pos, std::vector<double>& Vel, const std::vector<double>& Mass, std::vector<double>& Acc, const int * len, const int & N, const int & tag, const int & pId, const int & nP, const int & root, MPI_Status status, const int &steps, const double & dt, const int & jump, function Accel, Integrator evol){
+void Evolution(std::ofstream& File, double *Pos, double * Vel, const double * Mass, double * Acc, const int * len, const int & N, const int & tag, const int & pId, const int & nP, const int & root, MPI_Status status, const int &steps, const double & dt, const int & jump, function Accel, Integrator evol){
   /*---------------------------------------------------------------------------
   Evolution:
   Evolution of the system of particles under gravitational interactions.
@@ -313,6 +337,6 @@ void Evolution(std::ofstream& File, std::vector<double>& Pos, std::vector<double
   for (int ii=0; ii<steps; ii++){
     evol(Pos, Vel, Mass, Acc, dt, N, Accel, len, tag, pId, nP, root, status);
     if ( ii%jump == 0) Save_data(File, Pos, len, N, tag, pId, nP, root, status);
-    std::fill (Acc.begin(),Acc.end(),0);
+    for (int jj = 0; jj < 3*len[pId]; jj++) Acc[jj] = 0.0;
   }
 }
