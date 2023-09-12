@@ -1,5 +1,5 @@
 Ns = 1000 		#Number of particles in scailing
-Ng = 100			#Number of particles in the galaxy
+Ng = 1000			#Number of particles in the galaxy
 i = 0.1 		#Inclination of the galaxy (rads/pi)
 w = 0.6 		#Angle in the xy plane of the galaxy (rads/pi)
 rep = 100 		#Repetitions in the scaling
@@ -7,7 +7,7 @@ rep = 100 		#Repetitions in the scaling
 Npv = 4
 #Np = $(shell echo $$(($(Npv) / 2 ))) #Maximun number of cores
 Np = 2
-steps = 100000		#Steps in galaxy animation
+steps = 1000		#Steps in galaxy animation
 dt = 0.001		#Step size in galaxy animation
 jump = 100		#Every jump steps it saves a frame
 rad = 5000		#Radius of Galaxy (AU)
@@ -25,7 +25,7 @@ Galaxy: Evolution.cpp NBodies.cpp NBodies.h galaxy.py Animation.py
 
 SagA: Evolution.cpp NBodies.cpp NBodies.h SagA.data Animation.py
 	mpic++ $< NBodies.cpp -o Evolution.x;\
-	mpirun -np ${Np} ./Evolution.x 10000 0.001 100 SagA.data;\
+	mpirun -np ${Np} ./Evolution.x 1000 0.001 100 SagA.data;\
 	python3 Animation.py 14 0.001 100 0 	#Default parameters for SagA
 
 Scaling: scaling.cpp NBodies.cpp NBodies.h scaling.sh Random parallel.py speedup.py

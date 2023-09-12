@@ -73,14 +73,20 @@ void Gravitational_Acc(double * Acc, const double * Pos0, const double * Pos1, c
   ---------------------------------------------------------------------------*/
 
   const double G= 4*pow(M_PI,2);  // Gravitational constant [Msun*AU]
-  double d2;  // Square of distance
+  double drelx, drely, drelz, d2, inv_rtd2, cb_d2;  // Square of distance
   for(int ii=0; ii<len0; ii++){
     for(int jj=0; jj<len1; jj++){
-      d2=pow(Pos1[3*jj]-Pos0[3*ii],2)+pow(Pos1[3*jj+1]-Pos0[3*ii+1],2)+pow(Pos1[3*jj+2]-Pos0[3*ii+2],2);
+      drelx = Pos1[3*jj]-Pos0[3*ii];
+      drely = Pos1[3*jj+1]-Pos0[3*ii+1];
+      drelz = Pos1[3*jj+2]-Pos0[3*ii+2];
+      d2 = drelx*drelx+drely*drely+drelz*drelz;
       if(d2<1.0E-10) d2=1.0E-7; // Lower distances are not valid
-      for(int kk=0; kk<3; kk++){
-	      Acc[3*ii+kk]+=G*(Mass1[jj])*(Pos1[3*jj+kk]-Pos0[3*ii+kk])/pow(d2,1.5);
-      }
+      inv_rtd2 = 1./sqrt(d2);
+      cb_d2 = inv_rtd2*inv_rtd2*inv_rtd2;
+
+	    Acc[3*ii]+=G*Mass1[jj]*drelx*cb_d2;
+	    Acc[3*ii+1]+=G*Mass1[jj]*drely*cb_d2;
+	    Acc[3*ii+2]+=G*Mass1[jj]*drelz*cb_d2;
     }
   }
 }
@@ -116,6 +122,8 @@ void Acceleration(const double * Pos, const double * Mass, double * Acc, const i
     BufferPos[3*ii+1] = Pos[3*ii+1];
     BufferPos[3*ii+2] = Pos[3*ii+2];
     BufferMass[ii] = Mass[ii];
+  }
+  for (int ii=0; ii < max; ii++){
     Buffer2Pos[3*ii] = 0.0;
     Buffer2Pos[3*ii+1] = 0.0;
     Buffer2Pos[3*ii+2] = 0.0;
@@ -136,22 +144,11 @@ void Acceleration(const double * Pos, const double * Mass, double * Acc, const i
   int dst= (pId+1)%nP;
   int scr= (pId-1+nP)%nP;
   for (int jj=0; jj<nP-1; jj++){
-    if (pId%2==0){
-      MPI_Send(BufferPos, 3*max, MPI_DOUBLE, dst , tag, MPI_COMM_WORLD);
-      MPI_Recv(BufferPos, 3*max, MPI_DOUBLE, scr, tag, MPI_COMM_WORLD, &status);
-      MPI_Send(BufferMass, max, MPI_DOUBLE, dst , tag, MPI_COMM_WORLD);
-      MPI_Recv(BufferMass, max, MPI_DOUBLE, scr, tag, MPI_COMM_WORLD, &status);
-      Gravitational_Acc(Acc, Pos, BufferPos, BufferMass, len[pId], len[(scr-jj+nP)%nP]);
-    }
-    else{
-      MPI_Recv(Buffer2Pos, 3*max, MPI_DOUBLE, scr, tag, MPI_COMM_WORLD, &status);
-      MPI_Send(BufferPos, 3*max, MPI_DOUBLE, dst, tag, MPI_COMM_WORLD);
-      MPI_Recv(Buffer2Mass, max, MPI_DOUBLE, scr, tag, MPI_COMM_WORLD, &status);
-      MPI_Send(BufferMass, max, MPI_DOUBLE, dst, tag, MPI_COMM_WORLD);
-      Gravitational_Acc(Acc, Pos, Buffer2Pos, Buffer2Mass, len[pId], len[(scr-jj+nP)%nP]);
-      BufferPos = Buffer2Pos;
-      BufferMass = Buffer2Mass;
-    }
+    MPI_Sendrecv(BufferPos, 3*max, MPI_DOUBLE, dst, tag, Buffer2Pos, 3*max, MPI_DOUBLE, scr, tag, MPI_COMM_WORLD, &status);
+    MPI_Sendrecv(BufferMass, max, MPI_DOUBLE, dst, tag, Buffer2Mass, max, MPI_DOUBLE, scr, tag, MPI_COMM_WORLD, &status);
+    Gravitational_Acc(Acc, Pos, Buffer2Pos, Buffer2Mass, len[pId], len[(scr-jj+nP)%nP]);
+    BufferPos = Buffer2Pos;
+    BufferMass = Buffer2Mass;
   }
 }
 
