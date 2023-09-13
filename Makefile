@@ -23,9 +23,9 @@ Galaxy: Evolution.cpp NBodies.cpp NBodies.h galaxy.py Animation.py
 	mpirun -np ${Np} ./Evolution.x ${steps} ${dt} ${jump} ${Ng};\
 	python3 Animation.py ${Ng} ${dt} ${jump} ${rad} 
 
-SagA: Evolution.cpp NBodies.cpp NBodies.h SagA.data Animation.py
+SagA: SagA.cpp NBodies.cpp NBodies.h SagA.data Animation.py
 	mpic++ $< NBodies.cpp -o Evolution.x;\
-	mpirun -np ${Np} ./Evolution.x 1000 0.001 100 SagA.data;\
+	mpirun -np 2 ./Evolution.x 10000 0.001 100;\
 	python3 Animation.py 14 0.001 100 0 	#Default parameters for SagA
 
 Scaling: scaling.cpp NBodies.cpp NBodies.h scaling.sh Random parallel.py speedup.py
