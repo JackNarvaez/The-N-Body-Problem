@@ -1,15 +1,12 @@
-/*-----------------------------------------------
-Evolution of a system of particles. The only 
-interaction is gravitation. 
+/*-----------------------------------------------------------------------------
+The N-Body problem using MPI.
 The code implements the ring method.
------------------------------------------------*/
+-----------------------------------------------------------------------------*/
 
 #include <mpi.h>
 #include <iostream>
 #include <fstream> 
 #include <sstream> 
-#include <vector>
-#include <random>
 #include <cstdlib>
 #include <cmath>
 #include <string>
@@ -17,70 +14,70 @@ The code implements the ring method.
 using function = void(const double *, const double *, double *, const int *, const int &, const int &, const int &, const int &, const int &, MPI_Status);
 using Integrator = void(double *, double *, const double *, double *, const double &, const int &, function, const int *, const int &, const int &, const int &, const int &, MPI_Status);
 
-void read_data(const std::string &File_address, double * Pos, double * Vel, double * Mass){
+void read_data(const std::string & File_address, double * Pos, double * Vel, double * Mass) {
   /*---------------------------------------------------------------------------
-  read_data:
-  Read data about position, velocity and mass of particles.
+  Reads data from bodies: position, velocity and mass.
   -----------------------------------------------------------------------------
   Arguments:
-    File_address: File address from which the data is read.
-    Pos   :   Position of particles (1D vector).
-    Vel   :   Velocity of particles (1D vector).
-    Mass  :   Mass of particles (1D vector).
+    File_address:   File address from where the data is read.
+    Pos         :   Position (1D vector) [xi, yi, zi].
+    Vel         :   Velocity (1D vector) [vxi, vyi, vzi].
+    Mass        :   Mass (1D vector) [mi].
   ---------------------------------------------------------------------------*/
 
   std::ifstream File;
   File.open (File_address, std::ifstream::in);    // Open file for reading
   std::string line;
   int row = 0;
+  int ii;
 	while (!File.eof()){
 	  std::getline(File,line);
     // Omit empty lines and comments #
 	  if (line.length() == 0 || line[0] == '#'){
 	    continue;
     }else{
-      std::istringstream iss(line);   // Separate line in columns
+      std::istringstream iss(line);               // Separate line in columns
       std::string data;       
-      for (int ii=0; ii < 3; ii++){
+      for (ii = 0; ii < 3; ii++){
         iss >> data;
-        Pos[ii + 3*row] = atof(data.c_str());  // Position
+        Pos[ii + 3*row] = atof(data.c_str());     // Position
       }
-      for (int ii=0; ii < 3; ii++){
+      for (ii = 0; ii < 3; ii++){
         iss >> data;
-        Vel[ii + 3*row] = atof(data.c_str());  // Velocity
+        Vel[ii + 3*row] = atof(data.c_str());     // Velocity
       }
       iss >> data;
-      Mass[row] = atof(data.c_str());  // Mass
+      Mass[row] = atof(data.c_str());             // Mass
       row += 1;
     }
-    }
-    File.close();
+  }
+  File.close();
 }
 
 void Gravitational_Acc(double * Acc, const double * Pos0, const double * Pos1, const double * Mass1, const int & len0, const int & len1){
   /*---------------------------------------------------------------------------
-  Gravitational_Acc:
-  Calculate the gravitational acceleration on particles in <Pos0> due to particles in 
-  <Pos1>.
+  Calculates the gravitational acceleration on bodies in Pos0 due to bodies in 
+  Pos1.
   -----------------------------------------------------------------------------
   Arguments:
-    Acc   :   Acceleration of particles in vec0 (1D vector)
-    Pos0  :   Local particles.
-    Pos1  :   Shared particles in the ring.
-    Mass1 :   Mass of shared particles.
-    len0  :   Number of local particles.
-    len1  :   Size of vec1.
+    Acc   :   Acceleration of bodies in Pos0 (1D vector).
+    Pos0  :   Position of local bodies.
+    Pos1  :   Position of shared bodies in the ring.
+    Mass1 :   Mass of shared bodies.
+    len0  :   Number of local bodies.
+    len1  :   Size of Pos1.
   ---------------------------------------------------------------------------*/
 
-  const double G= 4*pow(M_PI,2);  // Gravitational constant [Msun*AU]
-  double drelx, drely, drelz, d2, inv_rtd2, cb_d2;  // Square of distance
-  for(int ii=0; ii<len0; ii++){
-    for(int jj=0; jj<len1; jj++){
+  const double G= 4*pow(M_PI,2);                  // Gravitational constant [Msun*AU]
+  int ii, jj;
+  double drelx, drely, drelz, d2, inv_rtd2, cb_d2;
+  for(ii = 0; ii < len0; ii++){
+    for(jj = 0; jj < len1; jj++){
       drelx = Pos1[3*jj]-Pos0[3*ii];
       drely = Pos1[3*jj+1]-Pos0[3*ii+1];
       drelz = Pos1[3*jj+2]-Pos0[3*ii+2];
       d2 = drelx*drelx+drely*drely+drelz*drelz;
-      if(d2<1.0E-10) d2=1.0E-7; // Lower distances are not valid
+      if(d2<1.0E-10) d2=1.0E-7;                   // Lower distances are not valid
       inv_rtd2 = 1./sqrt(d2);
       cb_d2 = inv_rtd2*inv_rtd2*inv_rtd2;
 
@@ -93,95 +90,86 @@ void Gravitational_Acc(double * Acc, const double * Pos0, const double * Pos1, c
 
 void Acceleration(const double * Pos, const double * Mass, double * Acc, const int * len, const int & N, const int & tag, const int & pId, const int & nP, const int & root, MPI_Status status){
   /*---------------------------------------------------------------------------
-  Acceleration:
-  Calculate the gravitational acceleration for each particle due to all others.
+  Calculates the gravitational acceleration for each body due to all others.
   -----------------------------------------------------------------------------
   Arguments:
-    Pos   :   Position of local particles (1D vector).
-    Mass  :   Mass of local particles (1D vector)
-    Acc   :   Acceleration of local particles (1D vector)
-    len   :   Number of particles to send to each process.
-    N     :   Number of total particles.
+    Pos   :   Position of local bodies (1D vector).
+    Mass  :   Mass of local bodies (1D vector).
+    Acc   :   Acceleration of local bodies (1D vector).
+    len   :   Array with the number of bodies per node.
+    N     :   Total bodies.
     tag   :   Message tag.
     pId   :   Process identity.
     nP    :   Number of processes.
-    root  :   Root process which reads data.
+    root  :   Root process.
     status:   Status object.
   ---------------------------------------------------------------------------*/
 
-  //  Temporal arrays for saving data of shared particles along the ring
-  int max = (N/nP+1);
+  int max = N/nP+1;
 
+  //  Temporal arrays for saving data of shared bodies along the ring
   double *BufferPos = (double *) malloc(3*(len[pId]+1)*sizeof(double));
   double *BufferMass = (double *) malloc((len[pId]+1)*sizeof(double));
-  double *Buffer2Pos = (double *) malloc(3*max*sizeof(double));
-  double *Buffer2Mass = (double *) malloc(max*sizeof(double));
-    
+
   for (int ii=0; ii < len[pId]; ii++){
-    BufferPos[3*ii] = Pos[3*ii];
+    BufferPos[3*ii]   = Pos[3*ii];
     BufferPos[3*ii+1] = Pos[3*ii+1];
     BufferPos[3*ii+2] = Pos[3*ii+2];
-    BufferMass[ii] = Mass[ii];
-  }
-  for (int ii=0; ii < max; ii++){
-    Buffer2Pos[3*ii] = 0.0;
-    Buffer2Pos[3*ii+1] = 0.0;
-    Buffer2Pos[3*ii+2] = 0.0;
-    Buffer2Mass[ii] = 0.0;
+    BufferMass[ii]    = Mass[ii];
   }
 
-
-  BufferPos[3*len[pId]] = 0.0;
+  BufferPos[3*len[pId]]   = 0.0;
   BufferPos[3*len[pId]+1] = 0.0;
   BufferPos[3*len[pId]+2] = 0.0;
-  BufferMass[len[pId]] = 0.0;
+  BufferMass[len[pId]]    = 0.0;
   
   //  Gravitational acceleration due to local particles
-  Gravitational_Acc(Acc, Pos, BufferPos, Mass, len[pId], len[pId]);
+  Gravitational_Acc(Acc, Pos, Pos, Mass, len[pId], len[pId]);
   
-
-  //  Ring method
+  /*The Ring Loop*/
   int dst= (pId+1)%nP;
   int scr= (pId-1+nP)%nP;
+  
   for (int jj=0; jj<nP-1; jj++){
-    MPI_Sendrecv(BufferPos, 3*max, MPI_DOUBLE, dst, tag, Buffer2Pos, 3*max, MPI_DOUBLE, scr, tag, MPI_COMM_WORLD, &status);
-    MPI_Sendrecv(BufferMass, max, MPI_DOUBLE, dst, tag, Buffer2Mass, max, MPI_DOUBLE, scr, tag, MPI_COMM_WORLD, &status);
-    Gravitational_Acc(Acc, Pos, Buffer2Pos, Buffer2Mass, len[pId], len[(scr-jj+nP)%nP]);
-    BufferPos = Buffer2Pos;
-    BufferMass = Buffer2Mass;
+    MPI_Sendrecv_replace(BufferPos, 3*max, MPI_DOUBLE, dst, tag, scr, tag, MPI_COMM_WORLD, &status);
+    MPI_Sendrecv_replace(BufferMass, max, MPI_DOUBLE, dst, tag, scr, tag, MPI_COMM_WORLD, &status);
+    Gravitational_Acc(Acc, Pos, BufferPos, BufferMass, len[pId], len[(scr-jj+nP)%nP]);
   }
+
+  free(BufferPos);
+  free(BufferMass);
 }
 
-void Save_vec(std::ofstream& File, const double * Vec, const int & N){
+void Save_vec(std::ofstream & File, const double * Pos, const double * Mass, const int & N){
   /*---------------------------------------------------------------------------
-  Save_vec:
-  Save a vector <Vec> in File.
+  Saves info from Pos and Mass in File.
   -----------------------------------------------------------------------------
   Arguments:
     File  :   File where data is saved.
-    Vec   :   Vector.
-    N     :   Size of N.
+    Pos   :   Positions.
+    Mass  :   Masses.
+    N     :   Size of Mass.
   ---------------------------------------------------------------------------*/
-
-  for (int ii = 0; ii < N; ii++){
-    File << Vec[3*ii]<< "\t" << Vec[3*ii+1] << "\t" << Vec[3*ii+2] << std::endl;
+  int ii;
+  for (ii = 0; ii < N; ii++){
+    File << Pos[3*ii]<< "\t" << Pos[3*ii+1] << "\t" << Pos[3*ii+2]<< "\t" << Mass[ii] << std::endl;
   }
 }
 
-void Save_data(std::ofstream& File, const double * Pos, const int * len, const int & N, const int & tag, const int & pId, const int & nP, const int & root, MPI_Status status){
+void Save_data(std::ofstream & File, const double * Pos, const double * Mass, const int * len, const int & N, const int & tag, const int & pId, const int & nP, const int & root, MPI_Status status){
   /*---------------------------------------------------------------------------
-  Save_Data:
-  Save the Position of all particles in Evolution.txt.
+  Saves positions and masses of all bodies in Evolution.txt.
   -----------------------------------------------------------------------------
   Arguments:
     File  :   File where data is saved.
-    Pos   :   Position of particles (1D vector)
-    len   :   Number of particles to send to each process.
-    N     :   Number of particles.
+    Pos   :   Position of bodies (1D vector).
+    Mass  :   Mass of bodies (1D vector).
+    len   :   Array with the number of bodies per node.
+    N     :   Number of bodies.
     tag   :   Message tag.
     pId   :   Process identity.
     nP    :   Number of processes.
-    root  :   Root process which reads data.
+    root  :   Root process.
     status:   Status object.
   ---------------------------------------------------------------------------*/
 
@@ -190,36 +178,56 @@ void Save_data(std::ofstream& File, const double * Pos, const int * len, const i
     std::cout.precision(2);
     std::cout<<std::scientific;
     File.open("Evolution.txt",std::fstream::app);
-    Save_vec(File, Pos, len[root]);
-    double * Temp = (double *) malloc(3*(N/nP+1)*sizeof(double));
-    for (int ii=0; ii < 3*(N/nP+1); ii++) Temp[ii] = 0.0;
-    // std::vector<double> Temp(3*(N/nP+1),0.0);
-    for (int ii =0; ii < nP; ii++){
-      if (ii != pId){
-        MPI_Recv(Temp, 3*len[ii], MPI_DOUBLE, ii, tag, MPI_COMM_WORLD, &status);
-        Save_vec(File, Temp,  len[ii]);
-      }  
+    Save_vec(File, Pos, Mass, len[root]);
+    double * TempP = (double *) malloc(3*(N/nP+1)*sizeof(double));
+    double * TempM = (double *) malloc((N/nP+1)*sizeof(double));
+    int ii;
+    for (ii = 0; ii < N/nP+1; ii++) {
+      TempP[3*ii] = 0.0;
+      TempP[3*ii+1] = 0.0;
+      TempP[3*ii+2] = 0.0;
+      TempM[ii] = 0.0;
     }
-    File.close(); 
+
+    for (ii = 0; ii < nP; ii++){
+      if (ii != pId){
+        MPI_Recv(TempP, 3*len[ii], MPI_DOUBLE, ii, tag, MPI_COMM_WORLD, &status);
+        MPI_Recv(TempM, len[ii], MPI_DOUBLE, ii, tag, MPI_COMM_WORLD, &status);
+        Save_vec(File, TempP, TempM,  len[ii]);
+      }
+    }
+    File.close();
+    free(TempP);
+    free(TempM);
   }else{
     MPI_Send(Pos, 3*len[pId], MPI_DOUBLE, root, tag, MPI_COMM_WORLD);
-    }
+    MPI_Send(Mass, len[pId], MPI_DOUBLE, root, tag, MPI_COMM_WORLD);
+  }
 }
 
-void Euler(double * Pos, double * Vel, const double * Mass, double * Acc, const double &dt, const int & N, function Accel, const int * len, const int & tag, const int & pId, const int & nP, const int & root, MPI_Status status){
+void Euler(double * Pos, double * Vel, const double * Mass, double * Acc, const double & dt, const int & N, function Accel, const int * len, const int & tag, const int & pId, const int & nP, const int & root, MPI_Status status){
   /*---------------------------------------------------------------------------
-  Euler:
-  Euler method to calculate next position and velocity.
+  Euler method to calculate position and velocity at next time step.
   -----------------------------------------------------------------------------
   Arguments:
-    Pos   :   Position of particles (1D vector)
-    Vel   :   Velocity of particles (1D vector)
-    Acc   :   Acceleration of particles in vec0 (1D vector)
-    N     :   Local particles for each process.
+    Pos   :   Position of bodies (1D vector).
+    Vel   :   Velocity of bodies (1D vector).
+    Mass  :   Mass of bodies (1D vector).
+    Acc   :   Accelerations (1D vector).
+    dt    :   Time step.
+    N     :   Total number of bodies.
+    Accel :   Function to calculate acceleration.
+    len   :   Array with the number of bodies per node.
+    tag   :   Message tag.
+    pId   :   Process identity.
+    nP    :   Number of processes.
+    root  :   Root process.
+    status:   Status object.
   ---------------------------------------------------------------------------*/
   Accel(Pos, Mass, Acc, len, N, tag, pId, nP, root, status);
-  for (int ii=0; ii < len[pId]; ii++){
-    for (int jj=0; jj<3; jj++){
+  int ii, jj;
+  for (ii = 0; ii < len[pId]; ii++){
+    for (jj = 0; jj<3; jj++){
       Vel[3*ii+jj] += Acc[3*ii+jj]*dt;
       Pos[3*ii+jj] += Vel[3*ii+jj]*dt;
     }
@@ -228,112 +236,130 @@ void Euler(double * Pos, double * Vel, const double * Mass, double * Acc, const 
 
 void PEFRL(double * Pos, double * Vel, const double * Mass, double *Acc, const double &dt, const int & N, function Accel, const int * len, const int & tag, const int & pId, const int & nP, const int & root, MPI_Status status){
   /*---------------------------------------------------------------------------
-  Euler:
-  Euler method to calculate next position and velocity.
+  Position Extended Forest-Ruth Like method to calculate position and velocity
+  at next time step.
   -----------------------------------------------------------------------------
   Arguments:
-    Pos   :   Position of particles (1D vector)
-    Vel   :   Velocity of particles (1D vector)
-    Acc   :   Acceleration of particles in vec0 (1D vector)
-    N     :   Local particles for each process.
+    Pos   :   Position of bodies (1D vector).
+    Vel   :   Velocity of bodies (1D vector).
+    Mass  :   Mass of bodies (1D vector).
+    Acc   :   Accelerations (1D vector).
+    dt    :   Time step.
+    N     :   Total number of bodies.
+    Accel :   Function to calculate acceleration.
+    len   :   Array with the number of bodies per node.
+    tag   :   Message tag.
+    pId   :   Process identity.
+    nP    :   Number of processes.
+    root  :   Root process.
+    status:   Status object.
   ---------------------------------------------------------------------------*/
   int local_particles = len[pId];
+
+  // Temporal arrays
   double * X = (double *) malloc(3*local_particles*sizeof(double));
   double * V = (double *) malloc(3*local_particles*sizeof(double));
 
   X = Pos;
   V = Vel;
 
-  // Parameters
+  // PEFRL Parameters
   double xi = 0.1786178958448091e+0;
   double gamma = -0.2123418310626054e+0;
   double chi = -0.6626458266981849e-1;
 
   // Main loop
-  for(int ii = 0; ii < local_particles; ii++){
-    for (int jj = 0; jj < 3; jj++){
-      X[3*ii+jj] += xi*dt*V[3*ii+jj];
-    }
+  int ii;
+  for(ii = 0; ii < local_particles; ii++){
+    X[3*ii] += xi*dt*V[3*ii];
+    X[3*ii+1] += xi*dt*V[3*ii+1];
+    X[3*ii+2] += xi*dt*V[3*ii+2];
   }
-  for (int ii = 0; ii < 3*local_particles; ii++) Acc[ii] = 0.0;
+  
   Accel(X, Mass, Acc, len, N, tag, pId, nP, root, status);
-  for (int ii = 0; ii < local_particles; ii++){
-    for (int jj = 0; jj < 3; jj++){
-      V[3*ii+jj] +=  0.5*(1.-2*gamma)*dt*Acc[3*ii+jj];
-    }
+  for (ii = 0; ii < local_particles; ii++){
+    V[3*ii] +=  0.5*(1.-2*gamma)*dt*Acc[3*ii];
+    V[3*ii+1] +=  0.5*(1.-2*gamma)*dt*Acc[3*ii+1];
+    V[3*ii+2] +=  0.5*(1.-2*gamma)*dt*Acc[3*ii+2];
   }
-  for (int ii = 0; ii < local_particles; ii++){
-    for (int jj = 0; jj < 3; jj++){
-      X[3*ii+jj] += chi*dt*V[3*ii+jj];
-    }
+  for (ii = 0; ii < local_particles; ii++){
+    X[3*ii] += chi*dt*V[3*ii];
+    X[3*ii+1] += chi*dt*V[3*ii+1];
+    X[3*ii+2] += chi*dt*V[3*ii+2];
   }
-  for (int ii = 0; ii < 3*local_particles; ii++) Acc[ii] = 0.0;
+  for (ii = 0; ii < 3*local_particles; ii++) Acc[ii] = 0.0;
+  
   Accel(X, Mass, Acc, len, N, tag, pId, nP, root, status);
-  for (int ii = 0; ii < local_particles; ii++){
-    for (int jj = 0; jj < 3; jj++){
-      V[3*ii+jj] += gamma*dt*Acc[3*ii+jj];
-    }
+  for (ii = 0; ii < local_particles; ii++){
+    V[3*ii] += gamma*dt*Acc[3*ii];
+    V[3*ii+1] += gamma*dt*Acc[3*ii+1];
+    V[3*ii+2] += gamma*dt*Acc[3*ii+2];
   }
-  for (int ii = 0; ii < local_particles; ii++){
-    for (int jj = 0; jj < 3; jj++){
-      X[3*ii+jj] += (1.-2*(chi+xi))*dt*V[3*ii+jj];
-    }
+  for (ii = 0; ii < local_particles; ii++){
+    X[3*ii] += (1.-2*(chi+xi))*dt*V[3*ii];
+    X[3*ii+1] += (1.-2*(chi+xi))*dt*V[3*ii+1];
+    X[3*ii+2] += (1.-2*(chi+xi))*dt*V[3*ii+2];
   }
-  for (int ii = 0; ii < 3*local_particles; ii++) Acc[ii] = 0.0;
+  for (ii = 0; ii < 3*local_particles; ii++) Acc[ii] = 0.0;
+
   Accel(X, Mass, Acc, len, N, tag, pId, nP, root, status);
-  for (int ii = 0; ii < local_particles; ii++){
-    for (int jj = 0; jj < 3; jj++){
-      V[3*ii+jj] += gamma*dt*Acc[3*ii+jj];
-    }
+  for (ii = 0; ii < local_particles; ii++){
+    V[3*ii] += gamma*dt*Acc[3*ii];
+    V[3*ii+1] += gamma*dt*Acc[3*ii+1];
+    V[3*ii+2] += gamma*dt*Acc[3*ii+2];
   }
-  for (int ii = 0; ii < local_particles; ii++){
-    for (int jj = 0; jj < 3; jj++){
-      X[3*ii+jj] += chi*dt*V[3*ii+jj];
-    }
+  for (ii = 0; ii < local_particles; ii++){
+    X[3*ii] += chi*dt*V[3*ii];
+    X[3*ii+1] += chi*dt*V[3*ii+1];
+    X[3*ii+2] += chi*dt*V[3*ii+2];
   }
-  for (int ii = 0; ii < 3*local_particles; ii++) Acc[ii] = 0.0;
+  for (ii = 0; ii < 3*local_particles; ii++) Acc[ii] = 0.0;
+  
   Accel(X, Mass, Acc, len, N, tag, pId, nP, root, status);
-  for (int ii = 0; ii < local_particles; ii++){
-    for (int jj = 0; jj < 3; jj++){
-      Vel[3*ii+jj] = V[3*ii+jj]+0.5*(1.-2*gamma)*dt*Acc[3*ii+jj];
-    }
+  for (ii = 0; ii < local_particles; ii++){
+    Vel[3*ii] = V[3*ii]+0.5*(1.-2*gamma)*dt*Acc[3*ii];
+    Vel[3*ii+1] = V[3*ii+1]+0.5*(1.-2*gamma)*dt*Acc[3*ii+1];
+    Vel[3*ii+2] = V[3*ii+2]+0.5*(1.-2*gamma)*dt*Acc[3*ii+2];
   }
-  for (int ii = 0; ii < local_particles; ii++){
-    for (int jj = 0; jj < 3; jj++){
-      Pos[3*ii+jj] = X[3*ii+jj]+xi*dt*Vel[3*ii+jj];
-    }
+  for (ii = 0; ii < local_particles; ii++){
+    Pos[3*ii] = X[3*ii]+xi*dt*Vel[3*ii];
+    Pos[3*ii+1] = X[3*ii+1]+xi*dt*Vel[3*ii+1];
+    Pos[3*ii+2] = X[3*ii+2]+xi*dt*Vel[3*ii+2];
   }
 }
 
-void Evolution(std::ofstream& File, double *Pos, double * Vel, const double * Mass, double * Acc, const int * len, const int & N, const int & tag, const int & pId, const int & nP, const int & root, MPI_Status status, const int &steps, const double & dt, const int & jump, function Accel, Integrator evol){
+void Evolution(std::ofstream & File, double *Pos, double * Vel, const double * Mass, double * Acc, const int * len, const int & N, const int & tag, const int & pId, const int & nP, const int & root, MPI_Status status, const int &steps, const double & dt, const int & jump, function Accel, Integrator evol){
   /*---------------------------------------------------------------------------
-  Evolution:
-  Evolution of the system of particles under gravitational interactions.
+  Evolution of the system of bodies under gravitational interactions.
   -----------------------------------------------------------------------------
   Arguments:
     File  :   File where data is saved.
-    Pos   :   Position of particles (1D vector)
-    Vel   :   Velocity of particles (1D vector)
-    Acc   :   Acceleration of particles in vec0 (1D vector)
-    len   :   Number of particles to send to each process.
-    N     :   Number of particles.
+    Pos   :   Position of bodies (1D vector).
+    Vel   :   Velocity of bodies (1D vector).
+    Mass  :   Mass of bodies (1D vector).
+    Acc   :   Accelerations (1D vector).
+    len   :   Array with the number of bodies per node.
+    N     :   Total number of bodies.
     tag   :   Message tag.
     pId   :   Process identity.
     nP    :   Number of processes.
-    root  :   Root process which reads data.
+    root  :   Root process.
     status:   Status object.
-    steps :   Number of steps
-    dt    :   Size of step
-    jump  :   Number of jumped steps
+    steps :   Evolution steps.
+    dt    :   Time step.
+    jump  :   Data storage interval.
+    Accel :   Function to calculate acceleration.
+    evol  :   Integrator.
   ---------------------------------------------------------------------------*/
   
   if (pId==root){
     remove("Evolution.txt");
   }
-  Save_data(File, Pos, len, N, tag, pId, nP, root, status);
-  for (int ii=0; ii<steps; ii++){
+  Save_data(File, Pos, Mass, len, N, tag, pId, nP, root, status);
+  int ii, jj;
+  for (ii = 0; ii < steps; ii++){
     evol(Pos, Vel, Mass, Acc, dt, N, Accel, len, tag, pId, nP, root, status);
-    if ( ii%jump == 0) Save_data(File, Pos, len, N, tag, pId, nP, root, status);
-    for (int jj = 0; jj < 3*len[pId]; jj++) Acc[jj] = 0.0;
+    if ( ii%jump == 0) Save_data(File, Pos, Mass, len, N, tag, pId, nP, root, status);
+    for (jj = 0; jj < 3*len[pId]; jj++) Acc[jj] = 0.0;
   }
 }

@@ -1,49 +1,33 @@
-Ns = 1000 		#Number of particles in scailing
-Ng = 1000			#Number of particles in the galaxy
-i = 0.1 		#Inclination of the galaxy (rads/pi)
-w = 0.6 		#Angle in the xy plane of the galaxy (rads/pi)
-rep = 100 		#Repetitions in the scaling
-#Npv =$(shell nproc) 	#Maximun number of threads
-Npv = 4
-#Np = $(shell echo $$(($(Npv) / 2 ))) #Maximun number of cores
-Np = 2
-steps = 1000		#Steps in galaxy animation
-dt = 0.001		#Step size in galaxy animation
-jump = 100		#Every jump steps it saves a frame
-rad = 5000		#Radius of Galaxy (AU)
+Nb = 10000		# Number of bodies in the galaxy
+Np = 32     	# Number of processes
+i = 0.1 		# Inclination of the galaxy (rads/pi)
+w = 0.6 		# Angle in the xy plane of the galaxy (rads/pi)
+steps = 10000 	# Evolution steps
+jump = 100		# Data storage interval
+dt = 0.001		# Time step
+rad = 5000		# Radius of Galaxy (AU)
 
-all: Galaxy
-Random: random.cpp
-	g++ $< -o random.x;\
-	./random.x ${Ns}
+all: PlotGal
 
 Galaxy: Evolution.cpp NBodies.cpp NBodies.h galaxy.py Animation.py
-	mpirun -n ${Np} python3 galaxy.py ${Ng} ${i} ${w} ${rad};\
+	mpirun -n 4 python3 galaxy.py 100 ${i} ${w} ${rad};\
 	mpic++ -std=c++17 $< NBodies.cpp -o Evolution.x;\
-	mpirun -np ${Np} ./Evolution.x ${steps} ${dt} ${jump} ${Ng};\
-	python3 Animation.py ${Ng} ${dt} ${jump} ${rad} 
+	mpirun -np 4 ./Evolution.x 100000 ${dt} ${jump} 100;\
+	python3 Animation.py 100 ${dt} ${jump} ${rad}
 
-SagA: SagA.cpp NBodies.cpp NBodies.h SagA.data Animation.py
-	mpic++ $< NBodies.cpp -o Evolution.x;\
-	mpirun -np 2 ./Evolution.x 10000 0.001 100;\
-	python3 Animation.py 14 0.001 100 0 	#Default parameters for SagA
+PlotGal: Animation.py
+	python3 $< ${Nb} ${dt} ${jump} ${rad}
 
-Scaling: scaling.cpp NBodies.cpp NBodies.h scaling.sh Random parallel.py speedup.py
-	mpic++ $< NBodies.cpp -o scaling.x;\
-	bash scaling.sh ${rep};\
-	python3 parallel.py ${Ns};\
-	python3 speedup.py ${Ns}
+SagA: SagA.cpp NBodies.cpp NBodies.h SagA.data Orbits.py
+	mpic++ $< NBodies.cpp -o SagA.x;\
+	mpirun -np 2 ./SagA.x 100000 0.001 100;\
+	python3 Orbits.py 14 0.001 100 0
 
-Strong: strong_scaling.sh scaling.cpp random.cpp NBodies.cpp NBodies.h fit.cpp
-	mpic++ scaling.cpp  NBodies.cpp -o scaling.x
-	bash $<  ${Np};\
-	bash $< 1;\
-	g++ -std=c++17  fit.cpp -lgsl -lgslcblas -o fit.x;\
-	echo Number of processes: ${Np};\
-	./fit.x ${Np};\
-	echo Number of processes: 1;\
-	./fit.x 1;\
-	python3 strong.py ${Np}
+Strong: strong.py
+	python3 $< 1000 6
+
+Weak: weak.py
+	python3 $< 10 4
 
 clean:
 	rm -f *.x *.txt *.png *.out *.gif
