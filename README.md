@@ -1,8 +1,5 @@
-# MPI-N-Body-Problem
+# The N-Body Problem
 
-Authors: Ochoa J. and Narváez J.
+Authors: Narvaez J. and Ochoa J.
 
-Simulation of a system of N bodies interacting with each other gravitationally. This code uses the parallel programming library: Message Passing Interface (`MPI`),
-it focuses on the implementation of `ring code`.
-
-The evolution step is performed using `Euler's method`, a first-order algorithm. By default, the code runs with the maximum number of cores.
+Simulation of a galaxy formed by N bodies interacting with each other gravitationally. The simulation is parallelized using the Message Passing Interface ('MPI'), with a specific emphasis on the 'ring method' implementation.
